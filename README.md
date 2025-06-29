@@ -365,7 +365,7 @@ docker-compose logs postgres
 如有问题或建议，请通过以下方式联系：
 
 - 项目Issues: [GitHub Issues](https://github.com/your-repo/issues)
-- 邮箱: your-email@example.com
+- 邮箱: 36178831@qq.com
 
 ## 🙏 致谢
 
