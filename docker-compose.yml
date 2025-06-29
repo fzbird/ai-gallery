@@ -1,0 +1,49 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: fzbird20250615
+      MYSQL_DATABASE: gallerydb
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - gallery-network
+
+  backend:
+    build: ./backend
+    pull_policy: always
+    container_name: gallery_backend
+    restart: always
+    entrypoint: /app/entrypoint.sh
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - gallery-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    pull_policy: always
+    container_name: gallery_frontend
+    restart: always
+    ports:
+      - "3300:80" # Map host 3300 to container 80 for direct access if needed
+    networks:
+      - gallery-network
+
+volumes:
+  mysql_data:
+
+networks:
+  gallery-network:
+    driver: bridge 
