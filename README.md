@@ -45,7 +45,7 @@
 - **FastAPI** - 现代化的 Python Web 框架
 - **SQLAlchemy 2.0** - ORM 框架，支持异步操作
 - **Alembic** - 数据库迁移工具
-- **PostgreSQL** - 主数据库
+- **MySQL 8.0** - 主数据库
 - **Pydantic v2** - 数据验证和序列化
 - **JWT** - 用户认证和授权
 - **Pillow** - 图片处理和缩略图生成
@@ -69,7 +69,7 @@
 ### 环境要求
 - Python 3.8+
 - Node.js 16+
-- PostgreSQL 12+
+- MySQL 8.0+
 - Docker & Docker Compose (可选)
 
 ### 使用 Docker 部署（推荐）
@@ -124,11 +124,12 @@ pip install -r requirements.txt
 
 3. **配置数据库**
 ```bash
-# 创建PostgreSQL数据库
-createdb gallery_db
+# 创建MySQL数据库
+mysql -u root -p
+CREATE DATABASE gallery_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 设置环境变量
-export DATABASE_URL="postgresql://username:password@localhost/gallery_db"
+export DATABASE_URL="mysql://root:password@localhost:3306/gallery_db"
 export SECRET_KEY="your-secret-key-here"
 ```
 
@@ -173,7 +174,7 @@ npm run build
 #### 后端环境变量
 ```bash
 # 数据库配置
-DATABASE_URL=postgresql://username:password@localhost/gallery_db
+DATABASE_URL=mysql://root:password@localhost:3306/gallery_db
 
 # 安全配置
 SECRET_KEY=your-jwt-secret-key
@@ -320,7 +321,7 @@ Gallery/
 ### 常见问题
 
 1. **数据库连接失败**
-   - 检查PostgreSQL服务是否启动
+   - 检查MySQL服务是否启动
    - 验证数据库连接字符串配置
 
 2. **文件上传失败**
@@ -345,7 +346,7 @@ docker-compose logs backend
 docker-compose logs frontend
 
 # 查看数据库日志
-docker-compose logs postgres
+docker-compose logs db
 ```
 
 ## 🤝 贡献指南
@@ -375,7 +376,7 @@ docker-compose logs postgres
 - [Vue.js](https://vuejs.org/) - 渐进式JavaScript框架
 - [Naive UI](https://www.naiveui.com/) - Vue 3组件库
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Python SQL工具包
-- [PostgreSQL](https://www.postgresql.org/) - 开源关系型数据库
+- [MySQL](https://www.mysql.com/) - 开源关系型数据库
 
 ---
 
