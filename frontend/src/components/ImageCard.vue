@@ -1,5 +1,5 @@
 <script setup>
-import { NCard, NIcon, NSpace, NTag, NImage, NButton, NPopconfirm } from 'naive-ui';
+import { NCard, NIcon, NSpace, NTag, NImage, NButton, NPopconfirm, NTooltip } from 'naive-ui';
 import { EyeOutline, HeartOutline, BookmarkOutline, TrashOutline as DeleteIcon } from '@vicons/ionicons5';
 import { useRouter } from 'vue-router';
 import { computed, defineEmits } from 'vue';
@@ -12,6 +12,10 @@ const props = defineProps({
     required: true
   },
   showDeleteButton: {
+    type: Boolean,
+    default: false
+  },
+  isCoverImage: {
     type: Boolean,
     default: false
   }
@@ -43,26 +47,35 @@ async function handleDeleteImage() {
   <div class="image-card-container" @click="navigateToDetail">
     <n-card class="image-card" hoverable>
       <div v-if="showDeleteButton" class="delete-button-container" @click.stop>
-        <n-popconfirm
-          @positive-click="handleDeleteImage"
-          negative-text="取消"
-          positive-text="删除"
-        >
+        <n-tooltip trigger="hover" :disabled="!image.is_cover_image">
           <template #trigger>
-            <n-button 
-              type="error" 
-              ghost 
-              size="small" 
-              circle
-              class="delete-button"
-            >
-              <template #icon>
-                <n-icon><DeleteIcon /></n-icon>
-              </template>
-            </n-button>
+            <div class="popconfirm-trigger-wrapper">
+              <n-popconfirm
+                @positive-click="handleDeleteImage"
+                negative-text="取消"
+                positive-text="删除"
+                :disabled="image.is_cover_image"
+              >
+                <template #trigger>
+                  <n-button 
+                    type="error" 
+                    ghost 
+                    size="small" 
+                    circle
+                    class="delete-button"
+                    :disabled="image.is_cover_image"
+                  >
+                    <template #icon>
+                      <n-icon><DeleteIcon /></n-icon>
+                    </template>
+                  </n-button>
+                </template>
+                确定要删除这张图片吗？此操作不可撤销。
+              </n-popconfirm>
+            </div>
           </template>
-          确定要删除这张图片吗？此操作不可撤销。
-        </n-popconfirm>
+          此图片为图集封面，无法直接删除。请先更换图集封面。
+        </n-tooltip>
       </div>
 
       <template #cover>
@@ -173,5 +186,10 @@ async function handleDeleteImage() {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* This wrapper is needed for the tooltip to work on a disabled button */
+.popconfirm-trigger-wrapper {
+  display: inline-block;
 }
 </style> 

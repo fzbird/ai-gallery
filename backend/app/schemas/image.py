@@ -47,6 +47,7 @@ class Image(ImageBase):
     views_count: int = Field(0, alias='views_count')
     liked_by_current_user: bool = False
     bookmarked_by_current_user: bool = False
+    is_cover_image: Optional[bool] = False
     comments: List["Comment"] = []
 
     model_config = ConfigDict(from_attributes=True) 

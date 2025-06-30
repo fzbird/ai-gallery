@@ -457,23 +457,18 @@ def read_images_by_user(
     current_user: Optional[models.User] = Depends(dependencies.get_current_user_optional),
 ):
     """
-    Retrieve images for a specific user by username.
+    Retrieve all images for a specific user.
     """
     user = crud.user.get_by_username(db, username=username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    images_query = (
-        db.query(models.Image)
-        .filter(models.Image.owner_id == user.id)
-        .options(selectinload(models.Image.liked_by_users), selectinload(models.Image.bookmarked_by_users))
-        .order_by(models.Image.created_at.desc())
-    )
-
-    images = images_query.offset(skip).limit(limit).all()
+        
+    images = crud.image.get_multi_by_owner(db, owner_id=user.id, skip=skip, limit=limit)
     
     current_user_id = current_user.id if current_user else None
-    return [_map_image_to_schema(img, current_user_id) for img in images]
+    
+    # 使用通用的映射函数
+    return [_map_image_to_schema(db, image, current_user_id) for image in images]
 
 @router.get("/{username}/likes", response_model=List[schemas.Image])
 def read_liked_images_by_user(
@@ -511,7 +506,7 @@ def read_liked_images_by_user(
         )
         
         current_user_id = current_user.id if current_user else None
-        return [_map_image_to_schema(img, current_user_id) for img in liked_images]
+        return [_map_image_to_schema(db, img, current_user_id) for img in liked_images]
     except Exception as e:
         print(f"Error in read_liked_images_by_user: {e}")
         # 如果查询失败，返回空列表

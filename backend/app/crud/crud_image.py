@@ -3,6 +3,7 @@ from sqlalchemy import func, text
 from typing import List, Union, Dict, Any, Optional
 import os
 
+from app import crud
 from app.models.image import Image
 from app.models.content_interactions import content_likes, content_bookmarks
 from app.schemas.image import ImageCreate, ImageUpdate
@@ -71,6 +72,19 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
             return []
         existing_hashes = db.query(Image.file_hash).filter(Image.file_hash.in_(hashes)).all()
         return [h for h, in existing_hashes]
+
+    def get_multi_by_owner(self, db: Session, *, owner_id: int, skip: int = 0, limit: int = 100) -> List[Image]:
+        """
+        Get all images for a specific owner.
+        """
+        return (
+            db.query(self.model)
+            .filter(self.model.owner_id == owner_id)
+            .order_by(self.model.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def get_total_count(self, db: Session) -> int:
         return db.query(self.model).count()
@@ -142,18 +156,23 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
     def remove(self, db: Session, *, id: int) -> Image:
         """
         删除一个图片记录，并安全地处理关联的物理文件。
-        物理文件只在没有其他图片记录引用它时才被删除。
+        如果图片属于某个图集，则更新该图集的图片数量。
         """
         obj = db.query(self.model).get(id)
         if not obj:
             return None
         
         filepath = obj.filepath
+        gallery_id = obj.gallery_id
         
         # 先删除数据库记录
         db.delete(obj)
         db.commit()
         
+        # 如果图片属于图集，更新图集计数
+        if gallery_id:
+            crud.gallery.update_image_count(db, gallery_id=gallery_id)
+            
         # 在记录删除后，再检查并安全地删除物理文件
         if filepath:
             safe_delete_image_file(db, filepath)

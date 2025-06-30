@@ -71,12 +71,18 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdateAdmin]):
         return db.query(self.model).count()
 
     def follow(self, db: Session, *, follower: User, followed: User) -> None:
-        follower.followed.append(followed)
-        db.commit()
+        db_follower = db.merge(follower)
+        db_followed = db.merge(followed)
+        if db_followed not in db_follower.following:
+            db_follower.following.append(db_followed)
+            db.commit()
 
     def unfollow(self, db: Session, *, follower: User, followed: User) -> None:
-        follower.followed.remove(followed)
-        db.commit()
+        db_follower = db.merge(follower)
+        db_followed = db.merge(followed)
+        if db_followed in db_follower.following:
+            db_follower.following.remove(db_followed)
+            db.commit()
 
 user = CRUDUser(User)
 

@@ -65,6 +65,7 @@ async function handleDeleteGallery(galleryId) {
 async function handleDeleteImage(imageId) {
   try {
     await userStore.deleteUserImage(imageId);
+    await userStore.fetchUploadedGalleries(props.username);
   } catch (error) {
     console.error('Error deleting image:', error);
   }

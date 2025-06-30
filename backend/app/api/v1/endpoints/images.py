@@ -17,107 +17,80 @@ from app.models.content_interactions import content_tags
 from app.crud.crud_gallery import gallery as crud_gallery
 from app.services.background_tasks import background_task_manager
 from pydantic import BaseModel
+from app.models import Gallery
 
 router = APIRouter()
 
 def trigger_ai_analysis_background(image_id: int):
-    """后台任务函数：触发AI分析"""
-    import asyncio
+    """
+    后台任务，用于触发对新上传图片的AI分析。
+    """
+    from app.db.session import SessionLocal
+    from app.services.ai_service import aianalysis
+    from app.services.background_tasks import background_task_manager
+    from app.core.config import settings
     import logging
-    
+
     logger = logging.getLogger(__name__)
-    
-    try:
-        # 创建新的事件循环或获取现有的
+
+    # 使用后台任务管理器来执行
+    @background_task_manager.task
+    def task():
+        db = SessionLocal()
         try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        
-        # 添加AI分析任务 - 修复方法名
-        if loop.is_running():
-            asyncio.create_task(background_task_manager.add_ai_analysis_task(image_id))
-        else:
-            loop.run_until_complete(background_task_manager.add_ai_analysis_task(image_id))
-            
-        logger.info(f"AI analysis task added for image {image_id}")
+            logger.info(f"Starting AI analysis for image {image_id}")
+            aianalysis.start_image_analysis(
+                db=db, 
+                image_id=image_id, 
+                confidence_threshold=settings.AI_CONFIDENCE_THRESHOLD
+            )
+            logger.info(f"AI analysis task for image {image_id} completed.")
+        except Exception as e:
+            logger.error(f"Error during AI analysis for image {image_id}: {e}")
+        finally:
+            db.close()
+
+    try:
+        task()
     except Exception as e:
         logger.error(f"Failed to add AI analysis task for image {image_id}: {e}")
 
-def _map_image_to_schema(image, user_id):
-    """Convert Image SQLAlchemy object to response schema"""
-    # Basic image attributes
-    image_data = {
-        'id': image.id,
-        'title': image.title,
-        'description': image.description,
-        'filename': image.filename,
-        'filepath': image.filepath,
-        'file_hash': image.file_hash,
-        'ai_status': image.ai_status,
-        'ai_description': image.ai_description,
-        'ai_tags': image.ai_tags,
-        'created_at': image.created_at,
-        'updated_at': image.updated_at,
-        'owner_id': image.owner_id,
-        'gallery_id': image.gallery_id,
-        'category_id': image.category_id,
-        'topic_id': image.topic_id,
-        'views_count': image.views_count or 0,
-        'likes_count': image.likes_count or 0,
-        'bookmarks_count': image.bookmarks_count or 0,
-        'comments_count': len(image.comments) if hasattr(image, 'comments') else 0,
-        'image_url': generate_image_url(image),
-        'liked_by_current_user': user_id in [user.id for user in image.liked_by_users] if user_id and hasattr(image, 'liked_by_users') and image.liked_by_users else False,
-        'bookmarked_by_current_user': user_id in [user.id for user in image.bookmarked_by_users] if user_id and hasattr(image, 'bookmarked_by_users') and image.bookmarked_by_users else False,
-    }
-    
-    # Owner information
-    if hasattr(image, 'owner') and image.owner:
-        image_data['owner'] = {
-            'id': image.owner.id,
-            'username': image.owner.username,
-            'email': image.owner.email
-        }
+def _map_image_to_schema(db: Session, image: models.Image, user_id: Optional[int]) -> schemas.Image:
+    """
+    Maps a database Image object to a Pydantic Image schema object.
+    Includes dynamic fields like image_url and user-specific interactions.
+    """
+    if not image:
+        return None
+
+    # 创建基础 schema 对象
+    image_schema = schemas.Image.model_validate(image)
+
+    # 1. 添加图片URL
+    if image.filepath and str(image.filepath).strip():
+        file_path = Path(str(image.filepath))
+        upload_dir = Path(settings.UPLOAD_DIRECTORY)
+        try:
+            relative_path = file_path.relative_to(upload_dir)
+            image_schema.image_url = f"/uploads/{relative_path}".replace("\\", "/")
+        except ValueError:
+            image_schema.image_url = f"/uploads/{image.filename}"
     else:
-        image_data['owner'] = {'id': image.owner_id, 'username': 'Unknown', 'email': ''}
-    
-    # Category information
-    if hasattr(image, 'category') and image.category:
-        image_data['category'] = {
-            'id': image.category.id,
-            'name': image.category.name,
-            'description': image.category.description
-        }
+        image_schema.image_url = f"/uploads/{image.filename}"
+
+    # 2. 添加用户交互信息
+    if user_id:
+        image_schema.liked_by_current_user = crud.image.is_liked_by_user(db=db, image_id=image.id, user_id=user_id)
+        image_schema.bookmarked_by_current_user = crud.image.is_bookmarked_by_user(db=db, image_id=image.id, user_id=user_id)
     else:
-        image_data['category'] = None
-    
-    # Tags
-    if hasattr(image, 'tags'):
-        image_data['tags'] = [{'id': tag.id, 'name': tag.name} for tag in image.tags]
-    else:
-        image_data['tags'] = []
-    
-    # Comments (limit to avoid excessive data)
-    if hasattr(image, 'comments'):
-        image_data['comments'] = [
-            {
-                'id': comment.id,
-                'content': comment.content,
-                'created_at': comment.created_at,
-                'owner_id': comment.owner_id,
-                'owner': {
-                    'id': comment.owner.id,
-                    'username': comment.owner.username
-                }
-            }
-            for comment in image.comments[:5] if comment.owner
-        ]
-    else:
-        image_data['comments'] = []
-    
-    return image_data
+        image_schema.liked_by_current_user = False
+        image_schema.bookmarked_by_current_user = False
+
+    # 3. 检查是否为封面图片
+    is_cover = db.query(Gallery).filter(Gallery.cover_image_id == image.id).first()
+    image_schema.is_cover_image = is_cover is not None
+
+    return image_schema
 
 @router.post("/", response_model=schemas.Image)
 def upload_image(
@@ -199,10 +172,10 @@ def upload_image(
             # 更新图集统计信息
             crud_gallery.update_image_count(db, gallery_id=gallery_id)
             
-            return _map_image_to_schema(new_image, current_user.id)
+            return _map_image_to_schema(db, new_image, current_user.id)
         else:
             # 不关联图集时，直接返回现有图片
-            return _map_image_to_schema(existing_image, current_user.id)
+            return _map_image_to_schema(db, existing_image, current_user.id)
 
     # Ensure the upload directory exists
     upload_dir = Path(settings.UPLOAD_DIRECTORY)
@@ -260,7 +233,7 @@ def upload_image(
     # 将AI分析任务添加到后台任务（上传成功后异步执行）
     background_tasks.add_task(trigger_ai_analysis_background, image.id)
 
-    return _map_image_to_schema(image, current_user.id)
+    return _map_image_to_schema(db, image, current_user.id)
 
 @router.get("/feed", response_model=List[schemas.Image])
 def read_images_feed(
@@ -273,7 +246,7 @@ def read_images_feed(
     Retrieve images for the current user's feed (following users' images).
     """
     images = crud.image.get_multi(db, skip=skip, limit=limit)
-    return [_map_image_to_schema(image, current_user.id) for image in images]
+    return [_map_image_to_schema(db, image, current_user.id) for image in images]
 
 @router.get("/", response_model=List[schemas.Image])
 def read_images(
@@ -292,7 +265,7 @@ def read_images(
         images = crud.image.get_multi(db, skip=skip, limit=limit)
     
     user_id = current_user.id if current_user else None
-    return [_map_image_to_schema(image, user_id) for image in images]
+    return [_map_image_to_schema(db, image, user_id) for image in images]
 
 @router.get("/search", response_model=List[schemas.Image])
 def search_images(
@@ -308,7 +281,7 @@ def search_images(
     # 简化搜索实现
     images = crud.image.get_multi(db, skip=skip, limit=limit)
     user_id = current_user.id if current_user else None
-    return [_map_image_to_schema(image, user_id) for image in images]
+    return [_map_image_to_schema(db, image, user_id) for image in images]
 
 @router.get("/{image_id}", response_model=schemas.Image)
 def read_image(
@@ -331,7 +304,7 @@ def read_image(
         db.refresh(image)
     
     user_id = current_user.id if current_user else None
-    return _map_image_to_schema(image, user_id)
+    return _map_image_to_schema(db, image, user_id)
 
 @router.put("/{image_id}", response_model=schemas.Image)
 def update_image(
@@ -350,7 +323,7 @@ def update_image(
     if image.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     image = crud.image.update(db=db, db_obj=image, obj_in=image_in)
-    return _map_image_to_schema(image, current_user.id)
+    return _map_image_to_schema(db, image, current_user.id)
 
 @router.delete("/{image_id}", response_model=schemas.Image)
 def delete_image(
@@ -369,7 +342,7 @@ def delete_image(
         raise HTTPException(status_code=400, detail="Not enough permissions")
     
     # 在删除之前映射对象，以避免DetachedInstanceError
-    image_to_return = _map_image_to_schema(image, current_user.id)
+    image_to_return = _map_image_to_schema(db, image, current_user.id)
     
     crud.image.remove(db=db, id=image_id)
     
