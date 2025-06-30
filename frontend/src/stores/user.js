@@ -4,6 +4,7 @@ import apiClient from '@/api/api.js';
 
 export const useUserStore = defineStore('user', () => {
   const profile = ref(null);
+  const uploadedGalleries = ref([]);
   const uploadedImages = ref([]);
   const likedImages = ref([]);
   const users = ref([]);
@@ -39,10 +40,23 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  async function fetchUploadedGalleries(username, page = 1, limit = 20) {
+    isLoadingUploaded.value = true;
+    try {
+      const response = await apiClient.get(`/users/${username}/galleries?skip=${(page-1)*limit}&limit=${limit}`);
+      uploadedGalleries.value = response.data;
+    } catch (error) {
+      console.error('Error fetching uploaded galleries:', error);
+      uploadedGalleries.value = [];
+    } finally {
+      isLoadingUploaded.value = false;
+    }
+  }
+
   async function fetchUploadedImages(username, page = 1, limit = 20) {
     isLoadingUploaded.value = true;
     try {
-      const response = await apiClient.get(`/users/${username}/images?page=${page}&limit=${limit}`);
+      const response = await apiClient.get(`/users/${username}/images?skip=${(page-1)*limit}&limit=${limit}`);
       uploadedImages.value = response.data;
     } catch (error) {
       console.error('Error fetching uploaded images:', error);
@@ -55,7 +69,7 @@ export const useUserStore = defineStore('user', () => {
   async function fetchLikedImages(username, page = 1, limit = 20) {
     isLoadingLiked.value = true;
     try {
-      const response = await apiClient.get(`/users/${username}/likes?page=${page}&limit=${limit}`);
+      const response = await apiClient.get(`/users/${username}/likes?skip=${(page-1)*limit}&limit=${limit}`);
       likedImages.value = response.data;
     } catch (error) {
       console.error('Error fetching liked images:', error);
@@ -151,6 +165,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     profile,
+    uploadedGalleries,
     uploadedImages,
     likedImages,
     users,
@@ -160,6 +175,7 @@ export const useUserStore = defineStore('user', () => {
     isLoadingUsers,
     hasMoreUsers,
     fetchUserProfile,
+    fetchUploadedGalleries,
     fetchUploadedImages,
     fetchLikedImages,
     toggleFollow,

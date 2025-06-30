@@ -20,7 +20,7 @@ class GalleryStats(BaseModel):
 
 # --- Base Schema ---
 class GalleryBase(BaseModel):
-    title: str = Field(..., min_length=3, max_length=100)
+    title: str = Field(..., min_length=2, max_length=100)
     description: Optional[str] = None
     topic_id: Optional[int] = None
 

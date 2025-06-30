@@ -4,12 +4,13 @@ from typing import List, Union, Dict, Any, Optional
 import os
 
 from app.models.image import Image
-from app.models.content_interactions import content_likes
+from app.models.content_interactions import content_likes, content_bookmarks
 from app.schemas.image import ImageCreate, ImageUpdate
 from app.crud.base import CRUDBase
 from app.models.user import User
 from app.models.tag import Tag
 from app.core.image_utils import safe_delete_image_file
+from app.models.comment import Comment
 
 class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
     def create(
@@ -151,6 +152,18 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         db.commit()
         return obj
 
+    def is_liked_by_user(self, db: Session, *, image_id: int, user_id: int) -> bool:
+        return db.query(content_likes).filter(
+            content_likes.c.content_id == image_id,
+            content_likes.c.user_id == user_id
+        ).first() is not None
+
+    def is_bookmarked_by_user(self, db: Session, *, image_id: int, user_id: int) -> bool:
+        return db.query(content_bookmarks).filter(
+            content_bookmarks.c.content_id == image_id,
+            content_bookmarks.c.user_id == user_id
+        ).first() is not None
+    
     def like(self, db: Session, *, user: User, image: Image) -> Image:
         # 确保user和image都在同一个会话中
         db_user = db.merge(user)
@@ -158,6 +171,8 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         
         if db_user not in db_image.liked_by_users:
             db_image.liked_by_users.append(db_user)
+            # 同时更新计数字段
+            db_image.likes_count = (db_image.likes_count or 0) + 1
             db.commit()
             db.refresh(db_image)
         return db_image
@@ -169,6 +184,8 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         
         if db_user in db_image.liked_by_users:
             db_image.liked_by_users.remove(db_user)
+            # 同时更新计数字段
+            db_image.likes_count = max(0, (db_image.likes_count or 0) - 1)
             db.commit()
             db.refresh(db_image)
         return db_image
@@ -180,6 +197,8 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         
         if db_user not in db_image.bookmarked_by_users:
             db_image.bookmarked_by_users.append(db_user)
+            # 同时更新计数字段
+            db_image.bookmarks_count = (db_image.bookmarks_count or 0) + 1
             db.commit()
             db.refresh(db_image)
         return db_image
@@ -191,8 +210,27 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         
         if db_user in db_image.bookmarked_by_users:
             db_image.bookmarked_by_users.remove(db_user)
+            # 同时更新计数字段
+            db_image.bookmarks_count = max(0, (db_image.bookmarks_count or 0) - 1)
             db.commit()
             db.refresh(db_image)
         return db_image
+
+    def get_with_relations(self, db: Session, *, id: int) -> Optional[Image]:
+        """获取图片及其关系数据（点赞、收藏、所有者等）"""
+        from sqlalchemy.orm import joinedload, selectinload
+        return (
+            db.query(self.model)
+            .options(
+                selectinload(self.model.liked_by_users),
+                selectinload(self.model.bookmarked_by_users),
+                joinedload(self.model.owner),
+                joinedload(self.model.category),
+                joinedload(self.model.tags),
+                selectinload(self.model.comments).joinedload(Comment.owner)
+            )
+            .filter(self.model.id == id)
+            .first()
+        )
 
 image = CRUDImage(Image) 

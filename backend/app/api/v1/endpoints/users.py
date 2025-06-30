@@ -7,8 +7,8 @@ import string
 from app import crud, models, schemas
 from app.api.v1 import dependencies
 from app.db.session import get_db
-from app.schemas.user import UserSimple
 from app.api.v1.endpoints.images import _map_image_to_schema
+from app.schemas.user import UserSimple
 from app.core.security import verify_password
 
 router = APIRouter()
@@ -415,6 +415,39 @@ def read_user_me_likes(
         # 如果查询失败，返回空列表
         return []
 
+@router.get("/{username}/galleries", response_model=List[schemas.GalleryWithImages])
+def read_galleries_by_user(
+    username: str,
+    db: Session = Depends(get_db),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: Optional[models.User] = Depends(dependencies.get_current_user_optional),
+):
+    """
+    Retrieve galleries for a specific user by username.
+    """
+    user = crud.user.get_by_username(db, username=username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 获取用户的图集
+    galleries = crud.gallery.get_by_owner(db, owner_id=user.id, skip=skip, limit=limit)
+    
+    # 为每个gallery添加当前用户相关信息
+    if current_user:
+        for gallery in galleries:
+            setattr(gallery, 'liked_by_current_user', False)
+            setattr(gallery, 'bookmarked_by_current_user', False)
+    
+    # 为所有图集的图片添加image_url字段
+    for gallery in galleries:
+        if hasattr(gallery, 'images') and gallery.images:
+            for image in gallery.images:
+                from app.core.image_utils import generate_image_url
+                setattr(image, 'image_url', generate_image_url(image))
+    
+    return galleries
+
 @router.get("/{username}/images", response_model=List[schemas.Image])
 def read_images_by_user(
     username: str,
@@ -466,7 +499,11 @@ def read_liked_images_by_user(
             db.query(models.Image)
             .join(content_likes, models.Image.id == content_likes.c.content_id)
             .filter(content_likes.c.user_id == user.id)
-            .options(selectinload(models.Image.liked_by_users), selectinload(models.Image.bookmarked_by_users))
+            .options(
+                selectinload(models.Image.liked_by_users), 
+                selectinload(models.Image.bookmarked_by_users),
+                selectinload(models.Image.comments).selectinload(models.Comment.owner)
+            )
             .order_by(models.Image.created_at.desc())
             .offset(skip)
             .limit(limit)

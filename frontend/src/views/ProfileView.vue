@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia';
 import { NSpin, NCard, NTabs, NTabPane, NAvatar, NStatistic, NSpace, NButton, NBreadcrumb, NBreadcrumbItem, NIcon, NEmpty } from 'naive-ui';
 import { PersonOutline, HeartOutline, CloudUploadOutline, PeopleOutline } from '@vicons/ionicons5';
 import ImageGrid from '@/components/ImageGrid.vue';
+import GalleryGrid from '@/components/GalleryGrid.vue';
 import AppFooter from '@/components/AppFooter.vue';
 
 const props = defineProps({
@@ -20,7 +21,7 @@ const route = useRoute();
 const userStore = useUserStore();
 const authStore = useAuthStore();
 
-const { profile, uploadedImages, likedImages, isLoadingProfile, isLoadingUploaded, isLoadingLiked } = storeToRefs(userStore);
+const { profile, uploadedGalleries, uploadedImages, likedImages, isLoadingProfile, isLoadingUploaded, isLoadingLiked } = storeToRefs(userStore);
 const { user: currentUser, isAuthenticated } = storeToRefs(authStore);
 
 const isOwnProfile = computed(() => {
@@ -29,6 +30,7 @@ const isOwnProfile = computed(() => {
 
 function fetchAllData(username) {
   userStore.fetchUserProfile(username);
+  userStore.fetchUploadedGalleries(username);
   userStore.fetchUploadedImages(username);
   userStore.fetchLikedImages(username);
 }
@@ -100,8 +102,8 @@ function handleFollow() {
                   </div>
                   <div class="stat-item">
                     <n-icon><CloudUploadOutline /></n-icon>
-                    <span class="stat-number">{{ uploadedImages.length }}</span>
-                    <span class="stat-label">上传</span>
+                    <span class="stat-number">{{ uploadedGalleries.length }}</span>
+                    <span class="stat-label">图集</span>
                   </div>
                   <div class="stat-item">
                     <n-icon><HeartOutline /></n-icon>
@@ -133,7 +135,22 @@ function handleFollow() {
         <div class="container">
           <div class="content-tabs">
             <n-tabs type="line" animated size="large" class="profile-tabs">
-              <n-tab-pane name="uploads" tab="上传的图片">
+              <n-tab-pane name="galleries" tab="上传的图集">
+                <div class="tab-content">
+                  <n-spin :show="isLoadingUploaded">
+                    <GalleryGrid :galleries="uploadedGalleries" v-if="uploadedGalleries.length > 0" />
+                    <div v-else class="empty-state">
+                      <n-empty description="该用户还没有上传任何图集">
+                        <template #icon>
+                          <n-icon size="48"><CloudUploadOutline /></n-icon>
+                        </template>
+                      </n-empty>
+                    </div>
+                  </n-spin>
+                </div>
+              </n-tab-pane>
+              
+              <n-tab-pane name="images" tab="上传的图片">
                 <div class="tab-content">
                   <n-spin :show="isLoadingUploaded">
                     <ImageGrid :images="uploadedImages" v-if="uploadedImages.length > 0" />

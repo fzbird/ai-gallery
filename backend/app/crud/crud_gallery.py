@@ -27,7 +27,13 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
         return (
             db.query(self.model)
             .filter(Gallery.owner_id == owner_id)
-            .options(joinedload(Gallery.owner), joinedload(Gallery.category))
+            .options(
+                joinedload(Gallery.owner), 
+                joinedload(Gallery.category),
+                joinedload(Gallery.images),
+                joinedload(Gallery.cover_image)
+            )
+            .order_by(Gallery.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
