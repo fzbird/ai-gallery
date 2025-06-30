@@ -163,6 +163,30 @@ export const useUserStore = defineStore('user', () => {
     hasMoreUsers.value = true;
   }
 
+  // 删除用户的图集
+  async function deleteUserGallery(galleryId) {
+    try {
+      await apiClient.delete(`/galleries/${galleryId}`);
+      // 从当前用户的图集列表中移除
+      uploadedGalleries.value = uploadedGalleries.value.filter(g => g.id !== galleryId);
+    } catch (error) {
+      console.error('Error deleting gallery:', error);
+      throw error;
+    }
+  }
+
+  // 删除用户的图片
+  async function deleteUserImage(imageId) {
+    try {
+      await apiClient.delete(`/images/${imageId}`);
+      // 从当前用户的图片列表中移除
+      uploadedImages.value = uploadedImages.value.filter(img => img.id !== imageId);
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      throw error;
+    }
+  }
+
   return {
     profile,
     uploadedGalleries,
@@ -181,5 +205,7 @@ export const useUserStore = defineStore('user', () => {
     toggleFollow,
     searchUsers,
     resetUsersState,
+    deleteUserGallery,
+    deleteUserImage,
   };
 }); 

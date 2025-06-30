@@ -296,8 +296,8 @@ onMounted(async () => {
   if (!categoryStore.categories.length) {
     loadTasks.push(
       categoryStore.fetchCategories().catch(error => {
-        console.error('Failed to load categories:', error);
-        message.error('加载分类失败');
+    console.error('Failed to load categories:', error);
+    message.error('加载分类失败');
       })
     );
   }
@@ -305,8 +305,8 @@ onMounted(async () => {
   if (!topicStore.topics.length) {
     loadTasks.push(
       topicStore.fetchTopics().catch(error => {
-        console.error('Failed to load topics:', error);
-        message.error('加载专题失败');
+    console.error('Failed to load topics:', error);
+    message.error('加载专题失败');
       })
     );
   }
@@ -476,45 +476,45 @@ watch(() => router.currentRoute.value.name, () => {
                   
                   <!-- 分类字段各占一行 -->
                   <n-form-item label="作品分类" path="category_id" class="form-item" style="display: block; width: 100%; margin-bottom: 12px;">
-                    <n-select 
-                      v-model:value="model.category_id" 
-                      :options="categoryStore.selectOptions" 
-                      placeholder="选择最适合的分类" 
-                      clearable 
-                      :loading="categoryStore.isLoading"
-                      class="custom-select"
-                    />
-                  </n-form-item>
-                  
+                      <n-select 
+                        v-model:value="model.category_id" 
+                        :options="categoryStore.selectOptions" 
+                        placeholder="选择最适合的分类" 
+                        clearable 
+                        :loading="categoryStore.isLoading"
+                        class="custom-select"
+                      />
+                    </n-form-item>
+                    
                   <n-form-item label="专题分类" path="topic_id" class="form-item" style="display: block; width: 100%; margin-bottom: 12px;">
-                    <n-select 
-                      v-model:value="model.topic_id" 
-                      :options="topicStore.activeSelectOptions" 
-                      placeholder="选择专题（可选）" 
-                      clearable 
-                      :loading="topicStore.isLoading"
-                      class="custom-select"
-                    >
-                      <template #option="{ node, option }">
-                        <div class="topic-option">
-                          <div class="topic-name">{{ option.label }}</div>
-                          <div class="topic-description" v-if="option.description">
-                            {{ option.description }}
+                      <n-select 
+                        v-model:value="model.topic_id" 
+                        :options="topicStore.activeSelectOptions" 
+                        placeholder="选择专题（可选）" 
+                        clearable 
+                        :loading="topicStore.isLoading"
+                        class="custom-select"
+                      >
+                        <template #option="{ node, option }">
+                          <div class="topic-option">
+                            <div class="topic-name">{{ option.label }}</div>
+                            <div class="topic-description" v-if="option.description">
+                              {{ option.description }}
+                            </div>
                           </div>
-                        </div>
+                        </template>
+                        <template #empty>
+                          <div style="padding: 12px; text-align: center;">
+                            <n-text depth="3">暂无可用专题</n-text>
+                          </div>
+                        </template>
+                      </n-select>
+                      <template #feedback>
+                        <n-text depth="3" style="font-size: 12px;">
+                          专题分类帮助用户发现相关主题的作品，可提高作品曝光度
+                        </n-text>
                       </template>
-                      <template #empty>
-                        <div style="padding: 12px; text-align: center;">
-                          <n-text depth="3">暂无可用专题</n-text>
-                        </div>
-                      </template>
-                    </n-select>
-                    <template #feedback>
-                      <n-text depth="3" style="font-size: 12px;">
-                        专题分类帮助用户发现相关主题的作品，可提高作品曝光度
-                      </n-text>
-                    </template>
-                  </n-form-item>
+                    </n-form-item>
                   
                   <n-form-item label="作品描述" path="description" class="form-item">
                     <n-input 

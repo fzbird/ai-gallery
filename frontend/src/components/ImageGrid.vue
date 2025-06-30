@@ -1,17 +1,42 @@
 <script setup>
 import ImageCard from './ImageCard.vue';
+import { defineEmits } from 'vue';
 
-defineProps({
+const props = defineProps({
   images: {
     type: Array,
     required: true,
   },
+  showDeleteButton: {
+    type: Boolean,
+    default: false
+  },
+  currentUserId: {
+    type: Number,
+    default: null
+  }
 });
+
+const emit = defineEmits(['delete-image']);
+
+function handleDeleteImage(imageId) {
+  emit('delete-image', imageId);
+}
+
+function canDeleteImage(image) {
+  return props.showDeleteButton && props.currentUserId && image.owner?.id === props.currentUserId;
+}
 </script>
 
 <template>
   <div class="image-grid">
-    <ImageCard v-for="image in images" :key="image.id" :image="image" />
+    <ImageCard 
+      v-for="image in images" 
+      :key="image.id" 
+      :image="image" 
+      :show-delete-button="canDeleteImage(image)"
+      @delete-image="handleDeleteImage"
+    />
   </div>
 </template>
 

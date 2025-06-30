@@ -1,9 +1,10 @@
 <script setup>
 import { computed, defineEmits } from 'vue';
 import { useRouter } from 'vue-router';
-import { NSpin, NButton, NTag, NSpace, NIcon, NEmpty } from 'naive-ui';
-import { HeartOutline as LikeIcon, BookmarkOutline as BookmarkIcon, ImageOutline as ImageIcon, DownloadOutline as DownloadIcon } from '@vicons/ionicons5';
+import { NSpin, NButton, NTag, NSpace, NIcon, NEmpty, NPopconfirm } from 'naive-ui';
+import { HeartOutline as LikeIcon, BookmarkOutline as BookmarkIcon, ImageOutline as ImageIcon, DownloadOutline as DownloadIcon, TrashOutline as DeleteIcon } from '@vicons/ionicons5';
 import { API_BASE_URL } from '@/api/api.js';
+import { message } from '@/utils/discrete-api';
 
 const props = defineProps({
   galleries: {
@@ -29,10 +30,18 @@ const props = defineProps({
   skipTopCount: {
     type: Number,
     default: 0
+  },
+  showDeleteButton: {
+    type: Boolean,
+    default: false
+  },
+  currentUserId: {
+    type: Number,
+    default: null
   }
 });
 
-const emit = defineEmits(['load-more']);
+const emit = defineEmits(['load-more', 'delete-gallery']);
 const router = useRouter();
 
 // 处理图集数据
@@ -87,6 +96,19 @@ function handleImageError(event) {
   console.error('Image load error:', event.target.src);
   // 可以在这里设置默认图片或其他处理
 }
+
+async function handleDeleteGallery(gallery) {
+  try {
+    emit('delete-gallery', gallery.id);
+    message.success('图集删除成功');
+  } catch (error) {
+    message.error('删除失败，请稍后重试');
+  }
+}
+
+function canDeleteGallery(gallery) {
+  return props.showDeleteButton && props.currentUserId && gallery.owner?.id === props.currentUserId;
+}
 </script>
 
 <template>
@@ -99,6 +121,30 @@ function handleImageError(event) {
         class="gallery-card"
         @click="viewGallery(gallery)"
       >
+        <!-- 删除按钮 -->
+        <div v-if="canDeleteGallery(gallery)" class="delete-button-container" @click.stop>
+          <n-popconfirm
+            @positive-click="handleDeleteGallery(gallery)"
+            negative-text="取消"
+            positive-text="删除"
+          >
+            <template #trigger>
+              <n-button 
+                type="error" 
+                ghost 
+                size="small" 
+                circle
+                class="delete-button"
+              >
+                <template #icon>
+                  <n-icon><DeleteIcon /></n-icon>
+                </template>
+              </n-button>
+            </template>
+            确定要删除图集"{{ gallery.title }}"吗？此操作不可撤销。
+          </n-popconfirm>
+        </div>
+
         <!-- 图集封面 -->
         <div class="gallery-cover">
           <img 
@@ -199,9 +245,10 @@ function handleImageError(event) {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .gallery-card:hover {
@@ -209,11 +256,31 @@ function handleImageError(event) {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
+/* 删除按钮 */
+.delete-button-container {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.delete-button {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.delete-button:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 图集封面 */
 .gallery-cover {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 180px;
   overflow: hidden;
+  background: #f5f5f5;
 }
 
 .cover-image {
@@ -228,21 +295,19 @@ function handleImageError(event) {
 }
 
 .no-image {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-  color: #999;
+  height: 100%;
+  color: #ccc;
   font-size: 14px;
 }
 
 .image-count-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  bottom: 8px;
+  right: 8px;
   background: rgba(0, 0, 0, 0.7);
   color: white;
   padding: 4px 8px;
@@ -251,6 +316,7 @@ function handleImageError(event) {
   font-weight: 500;
 }
 
+/* 图集信息 */
 .gallery-info {
   padding: 16px;
 }
@@ -258,9 +324,9 @@ function handleImageError(event) {
 .gallery-title {
   font-size: 16px;
   font-weight: 600;
-  margin: 0 0 12px 0;
-  color: #1f2937;
+  margin: 0 0 8px 0;
   line-height: 1.4;
+  color: #333;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -269,6 +335,7 @@ function handleImageError(event) {
 
 .tags-section {
   margin-bottom: 12px;
+  min-height: 24px;
 }
 
 .meta-info {
@@ -276,17 +343,17 @@ function handleImageError(event) {
   justify-content: space-between;
   align-items: center;
   font-size: 14px;
+  color: #666;
 }
 
 .author {
-  color: #667eea;
-  cursor: pointer;
   font-weight: 500;
+  cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .author:hover {
-  color: #4c51bf;
+  color: #4f46e5;
 }
 
 .stats {
@@ -298,45 +365,63 @@ function handleImageError(event) {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #6b7280;
-  font-size: 13px;
+  color: #999;
+}
+
+.stat-item .n-icon {
+  font-size: 14px;
 }
 
 /* 加载更多区域 */
 .load-more-section {
-  text-align: center;
-  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 0;
 }
 
 .load-more-btn {
-  padding: 12px 32px;
-  font-size: 16px;
+  min-width: 120px;
 }
 
 .no-more-text {
-  color: #9ca3af;
+  color: #999;
   font-size: 14px;
   margin: 0;
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-  .galleries-grid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-  }
-}
-
 @media (max-width: 768px) {
   .galleries-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 16px;
+  }
+  
+  .gallery-cover {
+    height: 160px;
+  }
+  
+  .gallery-info {
+    padding: 12px;
+  }
+  
+  .gallery-title {
+    font-size: 15px;
+  }
+  
+  .meta-info {
+    font-size: 13px;
   }
 }
 
 @media (max-width: 480px) {
   .galleries-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .gallery-cover {
+    height: 140px;
   }
 }
 </style> 

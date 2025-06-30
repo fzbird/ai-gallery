@@ -367,8 +367,13 @@ def delete_image(
         raise HTTPException(status_code=404, detail="Image not found")
     if image.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    image = crud.image.remove(db=db, id=image_id)
-    return _map_image_to_schema(image, current_user.id)
+    
+    # 在删除之前映射对象，以避免DetachedInstanceError
+    image_to_return = _map_image_to_schema(image, current_user.id)
+    
+    crud.image.remove(db=db, id=image_id)
+    
+    return image_to_return
 
 @router.post("/{image_id}/like")
 def toggle_image_like(

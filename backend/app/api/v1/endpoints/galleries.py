@@ -269,18 +269,24 @@ def delete_gallery(
     gallery_id: int,
     current_user: models.User = Depends(dependencies.get_current_active_user),
 ):
-    """
-    删除图集
-    """
-    gallery = crud.gallery.get(db=db, id=gallery_id)
+    """删除图集（在删除前先序列化，以避免 DetachedInstanceError）"""
+    # 先加载所有关联关系，防止 Session 关闭后 Lazy-Load
+    gallery = crud.gallery.get_with_images(db, id=gallery_id)
     if not gallery:
         raise HTTPException(status_code=404, detail="Gallery not found")
-    
+
     if gallery.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    gallery = crud.gallery.remove(db=db, id=gallery_id)
-    return gallery
+
+    # 为返回做准备（加载必要字段）
+    # 补充图片 URL 字段，保持与其他接口一致
+    _add_image_urls_to_gallery(gallery)
+    gallery_data = schemas.Gallery.model_validate(gallery)
+
+    # 真正执行删除（内部会安全删除图片文件）
+    crud.gallery.remove(db=db, id=gallery_id)
+
+    return gallery_data
 
 @router.post("/{gallery_id}/like")
 def toggle_gallery_like(

@@ -52,6 +52,22 @@ function handleFollow() {
   }
   userStore.toggleFollow(props.username);
 }
+
+async function handleDeleteGallery(galleryId) {
+  try {
+    await userStore.deleteUserGallery(galleryId);
+  } catch (error) {
+    console.error('Error deleting gallery:', error);
+  }
+}
+
+async function handleDeleteImage(imageId) {
+  try {
+    await userStore.deleteUserImage(imageId);
+  } catch (error) {
+    console.error('Error deleting image:', error);
+  }
+}
 </script>
 
 <template>
@@ -138,7 +154,13 @@ function handleFollow() {
               <n-tab-pane name="galleries" tab="上传的图集">
                 <div class="tab-content">
                   <n-spin :show="isLoadingUploaded">
-                    <GalleryGrid :galleries="uploadedGalleries" v-if="uploadedGalleries.length > 0" />
+                    <GalleryGrid 
+                      :galleries="uploadedGalleries" 
+                      :show-delete-button="isOwnProfile"
+                      :current-user-id="currentUser?.id"
+                      @delete-gallery="handleDeleteGallery"
+                      v-if="uploadedGalleries.length > 0" 
+                    />
                     <div v-else class="empty-state">
                       <n-empty description="该用户还没有上传任何图集">
                         <template #icon>
@@ -153,7 +175,13 @@ function handleFollow() {
               <n-tab-pane name="images" tab="上传的图片">
                 <div class="tab-content">
                   <n-spin :show="isLoadingUploaded">
-                    <ImageGrid :images="uploadedImages" v-if="uploadedImages.length > 0" />
+                    <ImageGrid 
+                      :images="uploadedImages" 
+                      :show-delete-button="isOwnProfile"
+                      :current-user-id="currentUser?.id"
+                      @delete-image="handleDeleteImage"
+                      v-if="uploadedImages.length > 0" 
+                    />
                     <div v-else class="empty-state">
                       <n-empty description="该用户还没有上传任何图片">
                         <template #icon>

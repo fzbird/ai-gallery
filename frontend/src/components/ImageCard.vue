@@ -1,16 +1,23 @@
 <script setup>
-import { NCard, NIcon, NSpace, NTag, NImage } from 'naive-ui';
-import { EyeOutline, HeartOutline, BookmarkOutline } from '@vicons/ionicons5';
+import { NCard, NIcon, NSpace, NTag, NImage, NButton, NPopconfirm } from 'naive-ui';
+import { EyeOutline, HeartOutline, BookmarkOutline, TrashOutline as DeleteIcon } from '@vicons/ionicons5';
 import { useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { computed, defineEmits } from 'vue';
 import { API_BASE_URL } from '@/api/api.js';
+import { message } from '@/utils/discrete-api';
 
 const props = defineProps({
   image: {
     type: Object,
     required: true
+  },
+  showDeleteButton: {
+    type: Boolean,
+    default: false
   }
 });
+
+const emit = defineEmits(['delete-image']);
 
 const router = useRouter();
 
@@ -21,11 +28,43 @@ function navigateToDetail() {
 function handleImageError() {
   // Handle image loading error
 }
+
+async function handleDeleteImage() {
+  try {
+    emit('delete-image', props.image.id);
+    message.success('图片删除成功');
+  } catch (error) {
+    message.error('删除失败，请稍后重试');
+  }
+}
 </script>
 
 <template>
   <div class="image-card-container" @click="navigateToDetail">
     <n-card class="image-card" hoverable>
+      <div v-if="showDeleteButton" class="delete-button-container" @click.stop>
+        <n-popconfirm
+          @positive-click="handleDeleteImage"
+          negative-text="取消"
+          positive-text="删除"
+        >
+          <template #trigger>
+            <n-button 
+              type="error" 
+              ghost 
+              size="small" 
+              circle
+              class="delete-button"
+            >
+              <template #icon>
+                <n-icon><DeleteIcon /></n-icon>
+              </template>
+            </n-button>
+          </template>
+          确定要删除这张图片吗？此操作不可撤销。
+        </n-popconfirm>
+      </div>
+
       <template #cover>
         <img 
           :src="`${API_BASE_URL}${props.image.image_url}`" 
@@ -55,6 +94,7 @@ function handleImageError() {
   cursor: pointer;
   break-inside: avoid;
   margin-bottom: 16px;
+  position: relative;
 }
 
 .image-card {
@@ -71,6 +111,23 @@ function handleImageError() {
 
 .image-card:hover {
   box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.delete-button-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.delete-button {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.delete-button:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .image-display {
