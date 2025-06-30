@@ -56,6 +56,7 @@ function handleFollow() {
 async function handleDeleteGallery(galleryId) {
   try {
     await userStore.deleteUserGallery(galleryId);
+    await userStore.fetchUploadedImages(props.username);
   } catch (error) {
     console.error('Error deleting gallery:', error);
   }

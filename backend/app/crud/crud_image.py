@@ -140,16 +140,24 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         return db_obj
 
     def remove(self, db: Session, *, id: int) -> Image:
+        """
+        删除一个图片记录，并安全地处理关联的物理文件。
+        物理文件只在没有其他图片记录引用它时才被删除。
+        """
         obj = db.query(self.model).get(id)
         if not obj:
             return None
-            
-        # 使用安全删除函数检查文件引用
-        if obj.filepath:
-            safe_delete_image_file(db, obj.filepath)
-                
+        
+        filepath = obj.filepath
+        
+        # 先删除数据库记录
         db.delete(obj)
         db.commit()
+        
+        # 在记录删除后，再检查并安全地删除物理文件
+        if filepath:
+            safe_delete_image_file(db, filepath)
+            
         return obj
 
     def is_liked_by_user(self, db: Session, *, image_id: int, user_id: int) -> bool:

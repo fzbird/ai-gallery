@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 import os
 
+from app import crud
 from app.crud.base import CRUDBase
 from app.models.gallery import Gallery
 from app.models.image import Image
@@ -309,22 +310,32 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
         return result or 0
 
     def remove(self, db: Session, *, id: int) -> Gallery:
-        """安全删除图集，检查关联图片的文件引用"""
-        gallery = db.query(self.model).get(id)
+        """
+        删除一个图集，并安全地删除其所有关联的图片记录和物理文件。
+        """
+        gallery = db.query(self.model).options(joinedload(self.model.images)).get(id)
         if not gallery:
             return None
-        
-        # 获取图集中的所有图片
-        gallery_images = db.query(Image).filter(Image.gallery_id == id).all()
-        
-        # 为每个图片使用安全删除函数
-        for image in gallery_images:
-            if image.filepath:
-                safe_delete_image_file(db, image.filepath)
-        
-        # 删除图集记录（这会级联删除关联的图片记录）
-        db.delete(gallery)
-        db.commit()
+
+        # 复制图片列表，因为在迭代过程中会修改原始关系
+        images_to_delete = list(gallery.images)
+
+        # 关键步骤：首先解除封面图片的外键约束
+        if gallery.cover_image_id is not None:
+            gallery.cover_image_id = None
+            db.commit()
+
+        # 现在可以安全地逐个删除图片
+        for image in images_to_delete:
+            crud.image.remove(db=db, id=image.id)
+
+        # 在所有图片处理完毕后，重新获取并删除图集记录
+        # 因为中间有多次commit，原始的gallery对象可能已经过期
+        gallery_to_delete = db.query(self.model).get(id)
+        if gallery_to_delete:
+            db.delete(gallery_to_delete)
+            db.commit()
+
         return gallery
 
 
