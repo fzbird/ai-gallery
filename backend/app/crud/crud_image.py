@@ -9,6 +9,7 @@ from app.schemas.image import ImageCreate, ImageUpdate
 from app.crud.base import CRUDBase
 from app.models.user import User
 from app.models.tag import Tag
+from app.core.image_utils import safe_delete_image_file
 
 class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
     def create(
@@ -59,6 +60,10 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
     
     def get_by_hash(self, db: Session, *, file_hash: str) -> Image:
         return db.query(Image).filter(Image.file_hash == file_hash).first()
+
+    def count_filepath_references(self, db: Session, *, filepath: str) -> int:
+        """统计指定文件路径被多少个图片记录引用"""
+        return db.query(Image).filter(Image.filepath == filepath).count()
 
     def get_existing_hashes(self, db: Session, *, hashes: List[str]) -> List[str]:
         if not hashes:
@@ -138,13 +143,9 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         if not obj:
             return None
             
-        # Also remove file from filesystem
-        if obj.filepath and os.path.exists(obj.filepath):
-            try:
-                os.remove(obj.filepath)
-            except OSError as e:
-                # Log the error but don't fail the deletion
-                print(f"Warning: Could not delete file {obj.filepath}: {e}")
+        # 使用安全删除函数检查文件引用
+        if obj.filepath:
+            safe_delete_image_file(db, obj.filepath)
                 
         db.delete(obj)
         db.commit()

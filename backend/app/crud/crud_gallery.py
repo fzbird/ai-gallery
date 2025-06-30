@@ -1,6 +1,7 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
+import os
 
 from app.crud.base import CRUDBase
 from app.models.gallery import Gallery
@@ -8,6 +9,7 @@ from app.models.image import Image
 from app.models.tag import Tag
 from app.models.comment import Comment
 from app.schemas.gallery import GalleryCreate, GalleryUpdate
+from app.core.image_utils import safe_delete_image_file
 
 
 class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
@@ -299,6 +301,25 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
         """获取所有图集的总浏览数"""
         result = db.query(func.sum(Gallery.views_count)).scalar()
         return result or 0
+
+    def remove(self, db: Session, *, id: int) -> Gallery:
+        """安全删除图集，检查关联图片的文件引用"""
+        gallery = db.query(self.model).get(id)
+        if not gallery:
+            return None
+        
+        # 获取图集中的所有图片
+        gallery_images = db.query(Image).filter(Image.gallery_id == id).all()
+        
+        # 为每个图片使用安全删除函数
+        for image in gallery_images:
+            if image.filepath:
+                safe_delete_image_file(db, image.filepath)
+        
+        # 删除图集记录（这会级联删除关联的图片记录）
+        db.delete(gallery)
+        db.commit()
+        return gallery
 
 
 gallery = CRUDGallery(Gallery) 

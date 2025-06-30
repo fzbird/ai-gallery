@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 from pathlib import Path
+from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.image import Image as ImageModel
 
@@ -85,4 +86,34 @@ def add_watermark(image_path: Path):
             out.save(image_path)
 
     except Exception as e:
-        print(f"Error adding watermark to image {image_path}: {e}") 
+        print(f"Error adding watermark to image {image_path}: {e}")
+
+def safe_delete_image_file(db: Session, filepath: str) -> bool:
+    """
+    安全删除图片文件，只有当文件没有其他引用时才删除
+    
+    Args:
+        db: 数据库会话
+        filepath: 要删除的文件路径
+        
+    Returns:
+        bool: 是否删除了物理文件
+    """
+    if not filepath or not os.path.exists(filepath):
+        return False
+    
+    # 统计有多少个图片记录引用这个文件路径
+    reference_count = db.query(ImageModel).filter(ImageModel.filepath == filepath).count()
+    
+    # 只有当引用计数为0时才删除物理文件
+    if reference_count == 0:
+        try:
+            os.remove(filepath)
+            print(f"Physical file deleted: {filepath}")
+            return True
+        except OSError as e:
+            print(f"Warning: Could not delete file {filepath}: {e}")
+            return False
+    else:
+        print(f"File {filepath} is referenced by {reference_count} records, skipping physical deletion")
+        return False 
