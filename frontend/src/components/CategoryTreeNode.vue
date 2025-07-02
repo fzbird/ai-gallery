@@ -56,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { NIcon, NButton } from 'naive-ui'
 import { 
   ChevronForward as ChevronRightIcon,
@@ -78,7 +78,39 @@ const props = defineProps({
 
 const emit = defineEmits(['view-category'])
 
-const isExpanded = ref(props.node.children && props.node.children.length > 0 && props.node.level < 2)
+// 所有节点默认收起状态，不自动展开
+const isExpanded = ref(false)
+
+// 监听搜索查询，如果有搜索且节点或子节点匹配，则展开
+watch(() => props.searchQuery, (newQuery) => {
+  if (newQuery && newQuery.trim()) {
+    // 检查当前节点或任何子节点是否匹配搜索
+    if (hasMatchingDescendant(props.node, newQuery)) {
+      isExpanded.value = true
+    }
+  } else {
+    // 搜索清空时，重置为收起状态
+    isExpanded.value = false
+  }
+}, { immediate: true })
+
+// 检查节点或其后代是否匹配搜索查询
+function hasMatchingDescendant(node, query) {
+  const lowerQuery = query.toLowerCase()
+  
+  // 检查当前节点是否匹配
+  const nodeMatches = node.name.toLowerCase().includes(lowerQuery) ||
+                     (node.description && node.description.toLowerCase().includes(lowerQuery))
+  
+  if (nodeMatches) return true
+  
+  // 递归检查子节点
+  if (node.children && node.children.length > 0) {
+    return node.children.some(child => hasMatchingDescendant(child, query))
+  }
+  
+  return false
+}
 
 const isHighlighted = computed(() => {
   if (!props.searchQuery) return false

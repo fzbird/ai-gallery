@@ -35,6 +35,7 @@ class GalleryUpdate(BaseModel):
     topic_id: Optional[int] = None
     category_id: Optional[int] = None
     cover_image_id: Optional[int] = None
+    tags: Optional[str] = None  # 标签字符串（逗号分隔）
 
 # --- Schema for Reading Data (API Response) ---
 class Gallery(GalleryBase):

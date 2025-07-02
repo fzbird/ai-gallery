@@ -52,6 +52,20 @@
 
             <!-- Action buttons -->
             <div class="gallery-actions">
+              <!-- 修改按钮（只有所有者可见） -->
+              <n-button 
+                v-if="canEditGallery"
+                type="warning"
+                size="large"
+                @click="showEditModal = true"
+                ghost
+              >
+                <template #icon>
+                  <n-icon><CreateOutline /></n-icon>
+                </template>
+                修改图集
+              </n-button>
+              
               <n-button 
                 type="primary" 
                 size="large"
@@ -131,11 +145,19 @@
         </template>
       </n-result>
     </div>
+
+    <!-- 图集编辑模态窗口 -->
+    <GalleryEditModal
+      v-if="gallery"
+      v-model:visible="showEditModal"
+      :gallery="gallery"
+      @gallery-updated="handleGalleryUpdated"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { 
   NSpin, NIcon, NButton, NEmpty, NResult,
@@ -143,12 +165,13 @@ import {
 } from 'naive-ui';
 import {
   PersonOutline, FolderOutline, TimeOutline, ImagesOutline,
-  EyeOutline, HeartOutline, BookmarkOutline, Heart, Bookmark
+  EyeOutline, HeartOutline, BookmarkOutline, Heart, Bookmark, CreateOutline
 } from '@vicons/ionicons5';
 
 import ImageCard from '@/components/ImageCard.vue';
 import CommentsSection from '@/components/CommentsSection.vue';
 import AppFooter from '@/components/AppFooter.vue';
+import GalleryEditModal from '@/components/GalleryEditModal.vue';
 import { useAuthStore } from '@/stores/auth';
 import { usePageTitle } from '@/utils/page-title';
 import api from '@/api/api.js';
@@ -164,6 +187,15 @@ const gallery = ref(null);
 const loading = ref(true);
 const liking = ref(false);
 const bookmarking = ref(false);
+const showEditModal = ref(false);
+
+// 计算属性：判断是否可以编辑图集
+const canEditGallery = computed(() => {
+  return authStore.isAuthenticated && 
+         gallery.value && 
+         gallery.value.owner && 
+         gallery.value.owner.id === authStore.user?.id;
+});
 
 // 获取图集详情
 async function fetchGallery() {
@@ -263,6 +295,13 @@ function handleCommentDeleted(commentId) {
       gallery.value.comments.splice(index, 1);
     }
   }
+}
+
+// 处理图集更新
+function handleGalleryUpdated() {
+  // 重新获取图集详情
+  fetchGallery();
+  message.success('图集修改成功！');
 }
 
 // 监听图集数据变化，更新页面标题

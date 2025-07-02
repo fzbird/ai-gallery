@@ -259,7 +259,21 @@ def update_gallery(
     if gallery.owner_id != current_user.id and not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
-    gallery = crud.gallery.update(db=db, db_obj=gallery, obj_in=gallery_in)
+    # 处理标签更新
+    if gallery_in.tags is not None:
+        from app.crud.crud_tag import get_or_create_tags
+        # 清除现有标签关联
+        gallery.tags.clear()
+        
+        # 添加新标签
+        if gallery_in.tags.strip():
+            tag_names = [tag.strip() for tag in gallery_in.tags.split(',') if tag.strip()]
+            new_tags = get_or_create_tags(db, tags=tag_names)
+            gallery.tags.extend(new_tags)
+    
+    # 创建一个新的更新对象，排除tags字段以避免类型冲突
+    update_data = gallery_in.model_dump(exclude={'tags'}, exclude_unset=True)
+    gallery = crud.gallery.update(db=db, db_obj=gallery, obj_in=update_data)
     return gallery
 
 @router.delete("/{gallery_id}", response_model=schemas.Gallery)

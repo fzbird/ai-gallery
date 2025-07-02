@@ -198,7 +198,7 @@ const galleryStore = useGalleryStore()
 const loading = ref(false)
 const searchQuery = ref('')
 const categoryCounts = ref({})
-const viewMode = ref('grid') // 'grid' | 'tree'
+const viewMode = ref('tree') // 默认使用树形视图
 const showChildrenPreview = ref(true)
 
 // 计算属性
