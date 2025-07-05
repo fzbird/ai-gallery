@@ -626,10 +626,19 @@ async function handleSave() {
 
 // 上传新图片
 async function uploadNewImages() {
+  let uploadedCount = 0;
+  let failedCount = 0;
+  
   for (const fileItem of newFileList.value) {
     try {
       // 计算文件哈希
-      fileItem.hash = await calculateFileHash(fileItem.file);
+      try {
+        fileItem.hash = await calculateFileHash(fileItem.file);
+      } catch (hashError) {
+        console.error(`计算文件哈希失败 ${fileItem.name}:`, hashError);
+        // 如果哈希计算失败，使用备用方案
+        fileItem.hash = `fallback_${fileItem.file.name}_${fileItem.file.size}_${Date.now()}`;
+      }
       
       const formData = new FormData();
       formData.append('file', fileItem.file);
@@ -654,10 +663,24 @@ async function uploadNewImages() {
         isDragging: false
       });
       
+      uploadedCount++;
+      
     } catch (error) {
       console.error(`上传图片 ${fileItem.name} 失败:`, error);
-      // 继续上传其他图片
+      failedCount++;
+      
+      // 显示具体的错误信息
+      const errorMessage = error.response?.data?.detail || error.message || '未知错误';
+      message.error(`上传图片 ${fileItem.name} 失败: ${errorMessage}`);
     }
+  }
+  
+  // 显示上传结果
+  if (uploadedCount > 0) {
+    message.success(`成功上传 ${uploadedCount} 张图片`);
+  }
+  if (failedCount > 0) {
+    message.warning(`${failedCount} 张图片上传失败，请检查文件格式和大小`);
   }
   
   // 清空新文件列表

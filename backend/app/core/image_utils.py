@@ -132,4 +132,41 @@ def safe_delete_image_file(db: Session, filepath: str) -> bool:
             return False
     else:
         print(f"File {filepath} is referenced by {reference_count} records, skipping physical deletion")
+        return False
+
+
+def safe_delete_gallery_folder(db: Session, gallery_id: int) -> bool:
+    """
+    安全删除图集文件夹，只有当文件夹为空时才删除
+    
+    Args:
+        db: 数据库会话
+        gallery_id: 图集ID
+        
+    Returns:
+        bool: 是否删除了图集文件夹
+    """
+    try:
+        # 构建图集文件夹路径
+        gallery_folder_name = f"gallery_{gallery_id}"
+        gallery_folder_path = Path(settings.UPLOAD_DIRECTORY) / gallery_folder_name
+        
+        if not gallery_folder_path.exists():
+            print(f"Gallery folder {gallery_folder_path} does not exist")
+            return False
+        
+        # 检查文件夹是否为空
+        if not any(gallery_folder_path.iterdir()):
+            # 文件夹为空，可以安全删除
+            gallery_folder_path.rmdir()
+            print(f"Gallery folder deleted: {gallery_folder_path}")
+            return True
+        else:
+            # 文件夹不为空，列出剩余文件
+            remaining_files = list(gallery_folder_path.iterdir())
+            print(f"Gallery folder {gallery_folder_path} is not empty, contains {len(remaining_files)} files: {[f.name for f in remaining_files]}")
+            return False
+            
+    except OSError as e:
+        print(f"Warning: Could not delete gallery folder {gallery_folder_path}: {e}")
         return False 

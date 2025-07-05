@@ -5,6 +5,7 @@ import { NSpin, NButton, NTag, NSpace, NIcon, NEmpty, NPopconfirm } from 'naive-
 import { HeartOutline as LikeIcon, BookmarkOutline as BookmarkIcon, ImageOutline as ImageIcon, DownloadOutline as DownloadIcon, TrashOutline as DeleteIcon } from '@vicons/ionicons5';
 import { API_BASE_URL } from '@/api/api.js';
 import { message } from '@/utils/discrete-api';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
   galleries: {
@@ -107,7 +108,16 @@ async function handleDeleteGallery(gallery) {
 }
 
 function canDeleteGallery(gallery) {
-  return props.showDeleteButton && props.currentUserId && gallery.owner?.id === props.currentUserId;
+  if (!props.showDeleteButton || !props.currentUserId) {
+    return false;
+  }
+  
+  // 从存储中获取当前用户信息以检查管理员权限
+  const authStore = useAuthStore();
+  const currentUser = authStore.user;
+  
+  // 图集拥有者或管理员可以删除
+  return gallery.owner?.id === props.currentUserId || currentUser?.is_superuser === true;
 }
 </script>
 

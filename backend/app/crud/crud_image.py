@@ -157,6 +157,7 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         """
         删除一个图片记录，并安全地处理关联的物理文件。
         如果图片属于某个图集，则更新该图集的图片数量。
+        在删除前先清理所有外键引用。
         """
         obj = db.query(self.model).get(id)
         if not obj:
@@ -164,6 +165,9 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         
         filepath = obj.filepath
         gallery_id = obj.gallery_id
+        
+        # 关键步骤：在删除图片前，先清理所有外键引用
+        self._clear_foreign_key_references(db, image_id=id)
         
         # 先删除数据库记录
         db.delete(obj)
@@ -178,6 +182,28 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
             safe_delete_image_file(db, filepath)
             
         return obj
+    
+    def _clear_foreign_key_references(self, db: Session, *, image_id: int) -> None:
+        """
+        清理所有引用指定图片的外键关系，防止删除时出现约束错误
+        """
+        # 1. 清理 Gallery 表的 cover_image_id 外键
+        from app.models.gallery import Gallery
+        db.query(Gallery).filter(Gallery.cover_image_id == image_id).update({
+            Gallery.cover_image_id: None
+        })
+        
+        # 2. 清理 Topic 表的 cover_image_id 外键
+        from app.models.topic import Topic
+        db.query(Topic).filter(Topic.cover_image_id == image_id).update({
+            Topic.cover_image_id: None
+        })
+        
+        # 3. 如果以后还有其他表引用Image，也在这里添加清理逻辑
+        # 例如：用户头像、分类封面等
+        
+        # 提交这些更改
+        db.commit()
 
     def is_liked_by_user(self, db: Session, *, image_id: int, user_id: int) -> bool:
         return db.query(content_likes).filter(

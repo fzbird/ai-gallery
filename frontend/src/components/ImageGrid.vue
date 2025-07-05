@@ -1,6 +1,7 @@
 <script setup>
 import ImageCard from './ImageCard.vue';
 import { defineEmits } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
   images: {
@@ -24,7 +25,16 @@ function handleDeleteImage(imageId) {
 }
 
 function canDeleteImage(image) {
-  return props.showDeleteButton && props.currentUserId && image.owner?.id === props.currentUserId;
+  if (!props.showDeleteButton || !props.currentUserId) {
+    return false;
+  }
+  
+  // 从存储中获取当前用户信息以检查管理员权限
+  const authStore = useAuthStore();
+  const currentUser = authStore.user;
+  
+  // 图片拥有者或管理员可以删除
+  return image.owner?.id === props.currentUserId || currentUser?.is_superuser === true;
 }
 </script>
 

@@ -28,6 +28,14 @@ const isOwnProfile = computed(() => {
   return isAuthenticated.value && currentUser.value?.username === profile.value?.username;
 });
 
+const canManageProfile = computed(() => {
+  // 用户可以管理自己的资料，或者管理员可以管理任何用户的资料
+  return isAuthenticated.value && (
+    currentUser.value?.username === profile.value?.username ||
+    currentUser.value?.is_superuser === true
+  );
+});
+
 function fetchAllData(username) {
   userStore.fetchUserProfile(username);
   userStore.fetchUploadedGalleries(username);
@@ -158,7 +166,7 @@ async function handleDeleteImage(imageId) {
                   <n-spin :show="isLoadingUploaded">
                     <GalleryGrid 
                       :galleries="uploadedGalleries" 
-                      :show-delete-button="isOwnProfile"
+                      :show-delete-button="canManageProfile"
                       :current-user-id="currentUser?.id"
                       @delete-gallery="handleDeleteGallery"
                       v-if="uploadedGalleries.length > 0" 
@@ -179,7 +187,7 @@ async function handleDeleteImage(imageId) {
                   <n-spin :show="isLoadingUploaded">
                     <ImageGrid 
                       :images="uploadedImages" 
-                      :show-delete-button="isOwnProfile"
+                      :show-delete-button="canManageProfile"
                       :current-user-id="currentUser?.id"
                       @delete-image="handleDeleteImage"
                       v-if="uploadedImages.length > 0" 

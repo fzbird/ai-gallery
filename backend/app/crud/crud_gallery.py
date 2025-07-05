@@ -10,7 +10,7 @@ from app.models.image import Image
 from app.models.tag import Tag
 from app.models.comment import Comment
 from app.schemas.gallery import GalleryCreate, GalleryUpdate
-from app.core.image_utils import safe_delete_image_file
+from app.core.image_utils import safe_delete_image_file, safe_delete_gallery_folder
 
 
 class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
@@ -311,7 +311,7 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
 
     def remove(self, db: Session, *, id: int) -> Gallery:
         """
-        删除一个图集，并安全地删除其所有关联的图片记录和物理文件。
+        删除一个图集，并安全地删除其所有关联的图片记录和物理文件，最后删除图集文件夹。
         """
         gallery = db.query(self.model).options(joinedload(self.model.images)).get(id)
         if not gallery:
@@ -320,11 +320,16 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
         # 复制图片列表，因为在迭代过程中会修改原始关系
         images_to_delete = list(gallery.images)
 
-        # 关键步骤：首先解除封面图片的外键约束
+        # 关键步骤：首先解除当前图集的封面图片外键约束
         if gallery.cover_image_id is not None:
             gallery.cover_image_id = None
             db.commit()
 
+        # 为每个要删除的图片清理外键引用（包括可能被其他表引用的情况）
+        for image in images_to_delete:
+            # 清理所有外键引用，包括Topic表可能引用的图片
+            self._clear_image_foreign_key_references(db, image_id=image.id)
+        
         # 现在可以安全地逐个删除图片
         for image in images_to_delete:
             crud.image.remove(db=db, id=image.id)
@@ -336,7 +341,36 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
             db.delete(gallery_to_delete)
             db.commit()
 
+        # 删除图集文件夹（如果为空）
+        try:
+            safe_delete_gallery_folder(db, gallery_id=id)
+        except Exception as e:
+            # 记录错误但不影响图集删除的成功
+            print(f"Warning: Could not delete gallery folder for gallery {id}: {e}")
+
         return gallery
+
+    def _clear_image_foreign_key_references(self, db: Session, *, image_id: int) -> None:
+        """
+        清理所有引用指定图片的外键关系，防止删除时出现约束错误
+        这个方法主要用于图集删除时批量清理外键引用
+        """
+        # 1. 清理 Gallery 表的 cover_image_id 外键
+        db.query(self.model).filter(self.model.cover_image_id == image_id).update({
+            self.model.cover_image_id: None
+        })
+        
+        # 2. 清理 Topic 表的 cover_image_id 外键
+        from app.models.topic import Topic
+        db.query(Topic).filter(Topic.cover_image_id == image_id).update({
+            Topic.cover_image_id: None
+        })
+        
+        # 3. 如果以后还有其他表引用Image，也在这里添加清理逻辑
+        # 例如：用户头像、分类封面等
+        
+        # 提交这些更改
+        db.commit()
 
 
 gallery = CRUDGallery(Gallery) 
