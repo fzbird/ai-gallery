@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:no-proxy": "cross-env NO_PROXY=true vite",
     "build": "vite build",
     "preview": "vite preview",
     "test:e2e": "npx playwright test tests/basic-check.spec.js",
@@ -27,6 +28,7 @@
     "@vicons/ionicons5": "^0.12.0",
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/eslint-config-prettier": "^9.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
     "naive-ui": "^2.38.1",

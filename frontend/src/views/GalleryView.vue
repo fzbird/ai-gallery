@@ -522,28 +522,78 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .gallery-banner {
+    min-height: 220px; /* 大幅减少banner高度 */
+    padding: 20px 0;
+  }
+  
+  .banner-content {
+    padding: 0 16px;
+  }
+  
   .gallery-main-title {
-    font-size: 32px;
+    font-size: 24px; /* 进一步减小标题 */
+    margin-bottom: 8px;
   }
   
   .gallery-subtitle {
-    font-size: 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
   }
   
   .gallery-meta-row {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 12px; /* 垂直16px，水平12px */
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  
+  .meta-item {
+    gap: 4px;
+    white-space: nowrap;
   }
   
   .gallery-stats-row {
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .stat-badge {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    gap: 4px;
   }
   
   .gallery-actions {
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .gallery-actions .n-button {
+    padding: 0 12px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    min-width: auto !important;
+  }
+  
+  .section-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .main-content {
+    padding: 24px 0;
+  }
+  
+  .container {
+    padding: 0 16px;
   }
   
   .images-grid {
@@ -551,12 +601,75 @@ onMounted(() => {
     gap: 16px;
   }
   
+  .comments-card {
+    padding: 16px;
+  }
+}
+
+/* 超小屏幕进一步优化 */
+@media (max-width: 480px) {
+  .gallery-banner {
+    min-height: 180px; /* 超小屏幕进一步减少高度 */
+    padding: 16px 0;
+  }
+  
+  .gallery-main-title {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  
+  .gallery-subtitle {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  
+  .gallery-meta-row {
+    gap: 12px 8px;
+    margin-bottom: 12px;
+    font-size: 11px;
+  }
+  
+  .gallery-stats-row {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  
+  .stat-badge {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+  
+  .gallery-actions {
+    gap: 6px;
+  }
+  
+  .gallery-actions .n-button {
+    padding: 0 8px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+  
+  .main-content {
+    padding: 16px 0;
+  }
+  
   .container {
-    padding: 0 16px;
+    padding: 0 12px;
+  }
+  
+  .section-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  
+  .images-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .comments-card {
-    padding: 16px;
+    padding: 12px;
   }
 }
 </style> 

@@ -415,41 +415,173 @@ async function handleDeleteImage(imageId) {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .profile-banner {
+    padding: 20px 0; /* 大幅减少banner padding */
+  }
+  
   .container {
     padding: 0 16px;
+  }
+  
+  .breadcrumb {
+    margin-bottom: 16px; /* 减少面包屑下方间距 */
   }
   
   .profile-header {
     flex-direction: column;
     text-align: center;
-    gap: 24px;
+    gap: 16px; /* 减少元素间距 */
+  }
+  
+  .user-avatar {
+    width: 80px !important; /* 减小头像尺寸 */
+    height: 80px !important;
+    border-width: 2px;
+  }
+  
+  .user-avatar :deep(.n-icon) {
+    font-size: 36px !important; /* 调整头像图标大小 */
   }
   
   .profile-title {
-    font-size: 28px;
+    font-size: 24px; /* 减小标题字体 */
+    margin-bottom: 8px;
+  }
+  
+  .profile-bio {
+    font-size: 14px; /* 减小bio字体 */
+    margin-bottom: 16px;
   }
   
   .profile-stats {
     justify-content: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 8px; /* 减少统计项间距 */
   }
   
   .stat-item {
-    padding: 8px 12px;
-    gap: 6px;
+    padding: 6px 12px; /* 减少统计项内边距 */
+    gap: 4px;
+    border-radius: 16px;
   }
   
   .stat-number {
-    font-size: 16px;
+    font-size: 14px; /* 减小数字字体 */
   }
   
   .stat-label {
-    font-size: 13px;
+    font-size: 12px; /* 减小标签字体 */
+  }
+  
+  .main-content {
+    padding: 24px 0; /* 减少主内容区padding */
   }
   
   .tab-content {
-    padding: 16px;
+    padding: 16px; /* 减少标签页内容padding */
+  }
+  
+  .profile-tabs :deep(.n-tabs-nav) {
+    padding: 0 16px; /* 减少标签页导航padding */
+  }
+  
+  .profile-tabs :deep(.n-tabs-tab) {
+    font-size: 14px; /* 减小标签页字体 */
+  }
+}
+
+/* 超小屏幕进一步优化 */
+@media (max-width: 480px) {
+  .profile-banner {
+    padding: 16px 0; /* 超小屏幕进一步减少padding */
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  .breadcrumb {
+    margin-bottom: 12px;
+  }
+  
+  .profile-header {
+    gap: 12px;
+  }
+  
+  .user-avatar {
+    width: 70px !important; /* 超小屏幕进一步减小头像 */
+    height: 70px !important;
+  }
+  
+  .user-avatar :deep(.n-icon) {
+    font-size: 32px !important;
+  }
+  
+  .profile-title {
+    font-size: 20px; /* 进一步减小标题 */
+    margin-bottom: 6px;
+  }
+  
+  .profile-bio {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  
+  .profile-stats {
+    gap: 6px;
+  }
+  
+  .stat-item {
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 60px; /* 确保统计项有最小宽度 */
+  }
+  
+  .stat-number {
+    font-size: 13px;
+  }
+  
+  .stat-label {
+    font-size: 11px;
+  }
+  
+  .main-content {
+    padding: 16px 0;
+  }
+  
+  .tab-content {
+    padding: 12px;
+  }
+  
+  .profile-tabs :deep(.n-tabs-nav) {
+    padding: 0 12px;
+  }
+  
+  .profile-tabs :deep(.n-tabs-tab) {
+    font-size: 13px;
+    padding: 8px 12px; /* 减少标签页内边距 */
+  }
+  
+  .empty-state {
+    min-height: 200px; /* 减少空状态最小高度 */
+  }
+  
+  .breadcrumb :deep(.n-breadcrumb-item) {
+    font-size: 13px; /* 减小面包屑字体 */
+  }
+}
+
+/* 针对统计项的特殊优化 - 确保在小屏幕上2行显示 */
+@media (max-width: 360px) {
+  .profile-stats {
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .stat-item {
+    flex: 1;
+    max-width: calc(50% - 3px);
+    margin-bottom: 6px;
   }
 }
 </style> 

@@ -380,7 +380,7 @@ async function initModal() {
   // 初始化现有图片列表
   existingImages.value = [...(props.gallery.images || [])].map(img => ({
     ...img,
-    image_url: img.image_url || `${API_BASE_URL}${img.image_url}`,
+            image_url: img.image_url || `${API_BASE_URL()}${img.image_url}`,
     isDragging: false
   }));
 }

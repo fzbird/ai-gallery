@@ -63,7 +63,7 @@ const handleCommentDeleted = (commentId) => {
 }
 
 const handleDownload = () => {
-  const imageUrl = `${API_BASE_URL}${currentImage.value.image_url}`;
+  const imageUrl = `${API_BASE_URL()}${currentImage.value.image_url}`;
   
   // 下载图片
   const a = document.createElement('a');
@@ -200,11 +200,11 @@ function formatDate(dateString) {
           <!-- Image display section -->
           <div class="image-display-section">
             <div class="image-container">
-              <img 
-                :src="`${API_BASE_URL}${currentImage.image_url}`" 
-                :alt="currentImage.title" 
-                class="main-image" 
-              />
+                              <img 
+                  :src="`${API_BASE_URL()}${currentImage.image_url}`" 
+                  :alt="currentImage.title" 
+                  class="main-image" 
+                />
             </div>
           </div>
 
@@ -443,32 +443,73 @@ function formatDate(dateString) {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .image-banner {
+    min-height: 220px; /* 大幅减少banner高度 */
+    padding: 20px 0;
+  }
+  
+  .banner-content {
+    padding: 0 16px;
+  }
+  
   .image-main-title {
-    font-size: 32px;
+    font-size: 24px; /* 进一步减小标题 */
+    margin-bottom: 8px;
   }
   
   .image-subtitle {
-    font-size: 16px;
+    font-size: 14px;
+    margin-bottom: 16px;
   }
   
   .image-meta-row {
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 12px; /* 垂直16px，水平12px */
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  
+  .meta-item {
+    gap: 4px;
+    white-space: nowrap;
   }
   
   .image-stats-row {
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .stat-badge {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    gap: 4px;
+  }
+  
+  .tags-section {
+    margin-bottom: 20px;
   }
   
   .image-actions {
-    flex-direction: column;
-    align-items: center;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
   
-  .container {
-    padding: 0 16px;
+  .image-actions .n-button {
+    padding: 0 12px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    min-width: auto !important;
+  }
+  
+  .main-content {
+    padding: 24px 0;
   }
   
   .image-container {
@@ -478,6 +519,72 @@ function formatDate(dateString) {
   
   .comments-card {
     padding: 16px;
+  }
+}
+
+/* 超小屏幕进一步优化 */
+@media (max-width: 480px) {
+  .image-banner {
+    min-height: 180px; /* 超小屏幕进一步减少高度 */
+    padding: 16px 0;
+  }
+  
+  .image-main-title {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  
+  .image-subtitle {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  
+  .image-meta-row {
+    gap: 12px 8px;
+    margin-bottom: 12px;
+    font-size: 11px;
+  }
+  
+  .image-stats-row {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  
+  .stat-badge {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 12px;
+  }
+  
+  .tags-section {
+    margin-bottom: 16px;
+  }
+  
+  .image-actions {
+    gap: 6px;
+  }
+  
+  .image-actions .n-button {
+    padding: 0 8px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+  
+  .main-content {
+    padding: 16px 0;
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  .image-container {
+    padding: 12px;
+    min-height: 250px;
+  }
+  
+  .comments-card {
+    padding: 12px;
   }
 }
 </style> 

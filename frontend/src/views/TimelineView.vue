@@ -115,7 +115,7 @@ onMounted(() => {
                     <div class="timeline-gallery-thumb">
                       <img 
                         v-if="gallery.coverImage && gallery.coverImage.image_url" 
-                        :src="`${API_BASE_URL}${gallery.coverImage.image_url}`" 
+                        :src="`${API_BASE_URL()}${gallery.coverImage.image_url}`" 
                         :alt="gallery.title"
                         class="cover-image"
                         loading="lazy"

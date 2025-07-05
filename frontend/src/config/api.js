@@ -11,42 +11,65 @@ const getCurrentHost = () => {
   return 'http://localhost';
 };
 
+// 强制清除任何可能的缓存，重新检测
+let cachedApiUrl = null;
+let lastDetectionTime = 0;
+const CACHE_DURATION = 5000; // 5秒缓存
+
 // 动态配置 API 基础 URL
-export const getApiBaseUrl = () => {
-  // 1. 优先使用环境变量
+export const getApiBaseUrl = (forceRefresh = false) => {
+  const now = Date.now();
+  
+  // 如果不强制刷新且有缓存，返回缓存值
+  if (!forceRefresh && cachedApiUrl && (now - lastDetectionTime) < CACHE_DURATION) {
+    return cachedApiUrl;
+  }
+  
+  // 1. 优先使用环境变量（如果明确配置）
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    cachedApiUrl = import.meta.env.VITE_API_URL;
+    lastDetectionTime = now;
+    return cachedApiUrl;
   }
   
-  // 2. 开发环境检测
-  if (import.meta.env.DEV) {
-    return 'http://localhost:8000';
-  }
-  
-  // 3. 生产环境自动检测
+  // 2. 基于当前访问地址智能检测
   if (typeof window !== 'undefined') {
-    const currentHost = getCurrentHost();
-    const currentPort = window.location.port;
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
     
-    // 如果是通过特定端口访问前端，推测后端端口
-    if (currentPort === '3300') {
-      // 前端在 3300，后端在 8000
-      return `${window.location.protocol}//${window.location.hostname}:8000`;
-    } else if (currentPort === '80' || currentPort === '443' || !currentPort) {
-      // 标准端口，使用反向代理（同域名）
-      return currentHost;
-    } else {
-      // 其他情况，尝试 8000 端口
-      return `${window.location.protocol}//${window.location.hostname}:8000`;
+    let detectedUrl;
+    
+    // 如果是IP地址访问（非localhost）
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      detectedUrl = `${protocol}//${hostname}:8000`;
     }
+    // 如果是localhost访问
+    else {
+      detectedUrl = 'http://localhost:8000';
+    }
+    
+    cachedApiUrl = detectedUrl;
+    lastDetectionTime = now;
+    return cachedApiUrl;
   }
   
-  // 4. 默认回退
-  return 'http://localhost:8000';
+  // 3. 默认回退
+  cachedApiUrl = 'http://localhost:8000';
+  lastDetectionTime = now;
+  return cachedApiUrl;
+};
+
+// 强制刷新API地址的函数
+export const refreshApiBaseUrl = () => {
+  cachedApiUrl = null;
+  lastDetectionTime = 0;
+  return getApiBaseUrl(true);
 };
 
 export const API_CONFIG = {
-  BASE_URL: getApiBaseUrl(),
+  get BASE_URL() {
+    return getApiBaseUrl();
+  },
   TIMEOUT: 10000,
   RETRY_TIMES: 3
 }; 

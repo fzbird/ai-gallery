@@ -1,5 +1,5 @@
 <script setup>
-import { computed, h, ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, h, ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { RouterLink } from 'vue-router';
 import { NLayoutHeader, NAvatar, NDropdown, NButton, NSpace, NIcon, NInput, NModal, NCard, NForm, NFormItem, useMessage } from 'naive-ui';
 import { useAuthStore } from '@/stores/auth';
@@ -9,7 +9,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { usePageTitle } from '@/utils/page-title';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { PersonCircleOutline as UserIcon, LogOutOutline as LogoutIcon, KeyOutline as PasswordIcon, SearchOutline as SearchIcon, CloudUploadOutline as UploadIcon, SettingsOutline as AdminIcon, ImageOutline as ImageIcon, FolderOutline as FolderIcon, ChevronDownOutline as ChevronDownIcon } from '@vicons/ionicons5';
+import { PersonCircleOutline as UserIcon, LogOutOutline as LogoutIcon, KeyOutline as PasswordIcon, SearchOutline as SearchIcon, CloudUploadOutline as UploadIcon, SettingsOutline as AdminIcon, ImageOutline as ImageIcon, FolderOutline as FolderIcon, ChevronDownOutline as ChevronDownIcon, MenuOutline as MenuIcon, CloseOutline as CloseIcon } from '@vicons/ionicons5';
 import { API_BASE_URL } from '@/api/api.js';
 
 const router = useRouter();
@@ -34,6 +34,10 @@ const passwordModel = ref({
   confirm_password: ''
 });
 
+// 移动端菜单控制
+const isMobileMenuOpen = ref(false);
+const isMobile = ref(false);
+
 const systemName = computed(() => settings.value?.site_name || 'AI Gallery');
 const siteLogo = computed(() => settings.value?.site_logo || null);
 const logoExists = ref(true);
@@ -48,6 +52,120 @@ const isRegistrationEnabled = computed(() => {
 function handleLogoError() {
   logoExists.value = false;
 }
+
+// 切换移动端菜单
+function toggleMobileMenu() {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
+}
+
+// 关闭移动端菜单
+function closeMobileMenu() {
+  isMobileMenuOpen.value = false;
+}
+
+// 更可靠的移动端检测 - 减少对屏幕宽度的依赖
+function detectMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  
+  let isMobileDevice = false;
+  let confidence = 0; // 信心度评分
+  const reasons = [];
+  
+  // 获取各种尺寸信息
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth || 0;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 0;
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  
+  // 方法1: User-Agent检测（最可靠） - 权重：40
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+  if (mobileRegex.test(userAgent)) {
+    confidence += 40;
+    reasons.push('UserAgent');
+  }
+  
+  // 方法2: 特殊移动端浏览器检测（高可靠性） - 权重：35
+  const isWechat = /MicroMessenger/i.test(userAgent);
+  const isMiuiBrowser = /MiuiBrowser/i.test(userAgent);
+  const isQQBrowser = /QQBrowser/i.test(userAgent);
+  const isUCBrowser = /UCBrowser/i.test(userAgent);
+  const isBaiduBrowser = /BaiduBrowser/i.test(userAgent);
+  const isHuaweiBrowser = /HuaweiBrowser/i.test(userAgent);
+  
+  if (isWechat || isMiuiBrowser || isQQBrowser || isUCBrowser || isBaiduBrowser || isHuaweiBrowser) {
+    confidence += 35;
+    reasons.push('SpecialMobileBrowser');
+  }
+  
+  // 方法3: 触摸屏检测（较可靠） - 权重：25
+  const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+  if (hasTouchScreen) {
+    confidence += 15; // 基础分
+    reasons.push('TouchScreen');
+    
+    // 如果有触摸屏且视口较小，增加权重
+    if (viewportWidth <= 768) {
+      confidence += 10;
+      reasons.push('TouchScreen+SmallViewport');
+    }
+  }
+  
+  // 方法4: 视口宽度检测（作为辅助参考） - 权重：20
+  if (viewportWidth <= 480) {
+    confidence += 20; // 非常小的视口，很可能是手机
+    reasons.push('VerySmallViewport');
+  } else if (viewportWidth <= 768) {
+    confidence += 10; // 较小的视口，可能是手机或平板
+    reasons.push('SmallViewport');
+  }
+  
+  // 方法5: 设备像素比检测（作为辅助） - 权重：10
+  if (devicePixelRatio >= 2 && viewportWidth <= 768) {
+    confidence += 10; // 高像素比且小视口，很可能是现代手机
+    reasons.push('HighDPI+SmallViewport');
+  }
+  
+  // 方法6: 屏幕方向检测 - 权重：5
+  if (window.orientation !== undefined) {
+    confidence += 5; // 支持屏幕方向的设备通常是移动设备
+    reasons.push('OrientationSupport');
+  }
+  
+  // 方法7: 检测是否是桌面环境的特征（负权重）
+  const isDesktopUA = /Windows NT|Macintosh|Linux x86/i.test(userAgent) && !/Mobile|Tablet/i.test(userAgent);
+  if (isDesktopUA && viewportWidth > 1024) {
+    confidence -= 30; // 明显的桌面环境
+    reasons.push('DesktopEnvironment');
+  }
+  
+  // 根据信心度判断是否为移动设备
+  isMobileDevice = confidence >= 30; // 信心度阈值为30
+  
+  return isMobileDevice;
+}
+
+// 检查屏幕尺寸和设备类型
+function checkScreenSize() {
+  const newIsMobile = detectMobileDevice();
+  if (isMobile.value !== newIsMobile) {
+    isMobile.value = newIsMobile;
+  }
+  
+  if (!isMobile.value) {
+    isMobileMenuOpen.value = false;
+  }
+}
+
+// 导航链接数据
+const navLinks = [
+  { to: '/categories', label: '分类' },
+  { to: '/topics', label: '专题' },
+  { to: '/departments', label: '部门' },
+  { to: '/daily', label: '每日更新' },
+  { to: '/popular', label: '魅力榜' },
+  { to: '/favorites', label: '收藏榜' },
+  { to: '/downloads', label: '下载榜' }
+];
 
 const userDropdownOptions = [
   {
@@ -112,10 +230,30 @@ function performSearch() {
   if (searchQuery.value.trim()) {
     router.push({ name: 'search', query: { q: searchQuery.value } });
     searchQuery.value = '';
+    closeMobileMenu(); // 搜索后关闭移动端菜单
   }
 }
 
 onMounted(async () => {
+  // 立即检查初始屏幕尺寸和设备类型
+  checkScreenSize();
+  
+  // 使用多个时机确保检测准确
+  setTimeout(() => checkScreenSize(), 100);
+  setTimeout(() => checkScreenSize(), 500);
+  setTimeout(() => checkScreenSize(), 1000);
+  
+  // 使用nextTick确保DOM完全渲染后再次检查
+  await nextTick(() => {
+    checkScreenSize();
+  });
+  
+  // 监听窗口大小变化和方向变化
+  window.addEventListener('resize', checkScreenSize);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(checkScreenSize, 500); // 延迟检测，等待方向变化完成
+  });
+  
   // 并行加载基础数据，但不阻塞页面渲染
   try {
     await Promise.allSettled([
@@ -143,7 +281,8 @@ watch(departments, (newDepartments) => {
 }, { immediate: true });
 
 onUnmounted(() => {
-  // Cleanup logic if needed
+  window.removeEventListener('resize', checkScreenSize);
+  window.removeEventListener('orientationchange', checkScreenSize);
 });
 </script>
 
@@ -151,30 +290,28 @@ onUnmounted(() => {
   <n-layout-header bordered class="header">
     <div class="header-content">
       <!-- Logo区域 - 点击返回首页 -->
-      <router-link to="/" class="logo-section">
+      <router-link to="/" class="logo-section" @click="closeMobileMenu">
         <div class="logo">
           <img 
             v-if="siteLogo && logoExists" 
-            :src="`${API_BASE_URL}${siteLogo}`" 
+            :src="`${API_BASE_URL()}${siteLogo}`" 
             :alt="systemName"
             class="logo-image"
-            @error="handleLogoError"
           />
           <span v-else class="logo-text">{{ systemName }}</span>
-                </div>
+        </div>
       </router-link>
       
-      <!-- 导航菜单区域 -->
-      <div class="nav-menu">
-        <router-link to="/categories" class="nav-link">分类</router-link>
-        <router-link to="/topics" class="nav-link">专题</router-link>
-        <router-link to="/departments" class="nav-link">部门</router-link>
-        <!-- <router-link to="/users" class="nav-link">用户</router-link> -->
-        <router-link to="/daily" class="nav-link">每日更新</router-link>
-        <!-- <router-link to="/timeline" class="nav-link">时间线</router-link> -->
-        <router-link to="/popular" class="nav-link">魅力榜</router-link>
-        <router-link to="/favorites" class="nav-link">收藏榜</router-link>
-        <router-link to="/downloads" class="nav-link">下载榜</router-link>
+      <!-- 桌面端导航菜单 -->
+      <div class="nav-menu desktop-nav">
+        <router-link 
+          v-for="link in navLinks" 
+          :key="link.to"
+          :to="link.to" 
+          class="nav-link"
+        >
+          {{ link.label }}
+        </router-link>
       </div>
 
       <!-- 右侧功能区 -->
@@ -199,20 +336,20 @@ onUnmounted(() => {
         <!-- 用户功能区 -->
         <div class="user-section">
           <n-space v-if="isAuthenticated && user" align="center" :size="12">
-            <router-link to="/gallery/upload">
+            <router-link to="/gallery/upload" @click="closeMobileMenu">
               <n-button type="primary" size="medium">
                 <template #icon>
                   <n-icon><UploadIcon /></n-icon>
                 </template>
-                图片上传
+                <span class="button-text">图片上传</span>
               </n-button>
             </router-link>
-            <router-link v-if="user?.is_superuser" to="/admin">
+            <router-link v-if="user?.is_superuser" to="/admin" @click="closeMobileMenu">
               <n-button size="medium">
                 <template #icon>
                   <n-icon><AdminIcon /></n-icon>
                 </template>
-                管理后台
+                <span class="button-text">管理后台</span>
               </n-button>
             </router-link>
             <n-dropdown trigger="hover" :options="userDropdownOptions" @select="handleUserDropdown">
@@ -222,16 +359,53 @@ onUnmounted(() => {
             </n-dropdown>
           </n-space>
           <n-space v-else :size="8">
-            <router-link to="/login">
+            <router-link to="/login" @click="closeMobileMenu">
               <n-button size="medium">登录</n-button>
             </router-link>
-            <router-link v-if="isRegistrationEnabled" to="/register">
+            <router-link v-if="isRegistrationEnabled" to="/register" @click="closeMobileMenu">
               <n-button type="primary" size="medium">注册</n-button>
             </router-link>
           </n-space>
         </div>
+
+        <!-- 移动端汉堡菜单按钮 - 主要由CSS控制显示 -->
+        <n-button 
+          class="mobile-menu-button"
+          quaternary
+          @click="toggleMobileMenu"
+          :class="{ 'menu-open': isMobileMenuOpen }"
+        >
+          <template #icon>
+            <n-icon size="20">
+              <MenuIcon v-if="!isMobileMenuOpen" />
+              <CloseIcon v-else />
+            </n-icon>
+          </template>
+        </n-button>
       </div>
     </div>
+
+    <!-- 移动端导航菜单 - 主要由CSS控制显示 -->
+    <div class="mobile-nav" :class="{ 'mobile-nav-open': isMobileMenuOpen }">
+      <div class="mobile-nav-content">
+        <router-link 
+          v-for="link in navLinks" 
+          :key="link.to"
+          :to="link.to" 
+          class="mobile-nav-link"
+          @click="closeMobileMenu"
+        >
+          {{ link.label }}
+        </router-link>
+      </div>
+    </div>
+
+    <!-- 移动端菜单遮罩 -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="mobile-nav-overlay"
+      @click="closeMobileMenu"
+    ></div>
 
     <!-- 修改密码模态框 -->
     <n-modal v-model:show="showPasswordModal" preset="card" style="width: 500px" title="修改密码" :mask-closable="false">
@@ -325,7 +499,7 @@ onUnmounted(() => {
   letter-spacing: -0.5px;
 }
 
-/* 导航菜单样式 */
+/* 桌面端导航菜单样式 */
 .nav-menu {
   display: flex;
   align-items: center;
@@ -375,6 +549,96 @@ onUnmounted(() => {
   align-items: center;
 }
 
+/* 移动端汉堡菜单按钮 - 主要由CSS控制显示 */
+.mobile-menu-button {
+  display: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(102, 126, 234, 0.1);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.mobile-menu-button:hover {
+  background: rgba(102, 126, 234, 0.15);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.mobile-menu-button.menu-open {
+  background: rgba(102, 126, 234, 0.2);
+  color: #667eea;
+  border-color: rgba(102, 126, 234, 0.5);
+}
+
+/* 移动端导航菜单 - 主要由CSS控制显示 */
+.mobile-nav {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-100%);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 999;
+  display: none; /* 默认隐藏 */
+}
+
+.mobile-nav-open {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-nav-content {
+  padding: 20px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.mobile-nav-link {
+  display: block;
+  color: #374151;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 18px;
+  padding: 16px 20px;
+  margin: 6px 0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+  text-align: center;
+}
+
+.mobile-nav-link:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.08);
+  border-color: rgba(102, 126, 234, 0.2);
+}
+
+.mobile-nav-link.router-link-active {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.12);
+  border-color: rgba(102, 126, 234, 0.3);
+  font-weight: 600;
+}
+
+/* 移动端菜单遮罩 */
+.mobile-nav-overlay {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  backdrop-filter: blur(2px);
+}
+
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .header-content {
@@ -406,17 +670,183 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 768px) {
-  .nav-menu {
-    display: none; /* 移动端隐藏导航菜单，后续可添加汉堡菜单 */
+/* 平板设备适配 */
+@media (max-width: 896px) {
+  .desktop-nav {
+    display: none !important;
   }
   
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    order: 10;
+  }
+  
+  .mobile-nav {
+    display: block !important;
+  }
+}
+
+/* 手机设备适配 - 使用多种查询确保兼容性 */
+@media (max-width: 768px), 
+       (max-device-width: 768px), 
+       (hover: none) and (pointer: coarse) and (max-width: 1024px) {
   .header-content {
-    gap: 16px;
+    gap: 12px;
+    padding: 0 5px; /* 左右边距统一为5px，让内容更好地撑满屏幕 */
+  }
+  
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    order: 10;
+  }
+  
+  .mobile-nav {
+    display: block !important;
   }
   
   .search-container {
-    width: 180px;
+    width: 140px; /* 增加搜索框宽度，更好利用屏幕空间 */
+  }
+  
+  .search-input {
+    border-radius: 16px;
+  }
+  
+  .button-text {
+    display: none;
+  }
+  
+  .user-section .n-space {
+    gap: 6px !important;
+  }
+  
+  .logo-text {
+    font-size: 16px;
+  }
+  
+  .logo-image {
+    height: 28px;
+    max-width: 100px;
+  }
+  
+  .mobile-nav-link {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* 超小屏幕适配 */
+@media (max-width: 480px) {
+  .header-content {
+    gap: 8px;
+    padding: 0 5px; /* 超小屏幕也保持5px左右边距，确保一致性 */
+  }
+  
+  .search-container {
+    width: 100px; /* 增加超小屏幕搜索框宽度，更好利用空间 */
+  }
+  
+  .search-input :deep(.n-input__input-el) {
+    font-size: 13px;
+  }
+  
+  .search-input :deep(.n-input__placeholder) {
+    font-size: 11px;
+  }
+  
+  .logo-text {
+    font-size: 14px;
+  }
+  
+  .user-section .n-button {
+    min-width: 36px !important;
+    padding: 0 8px !important;
+  }
+  
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    margin-right: 5px; 
+  }
+  
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-nav {
+    display: block !important;
+  }
+}
+
+/* 针对触摸设备的额外保障 */
+@media (hover: none) and (pointer: coarse) {
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    margin-right: 5px; /* 触摸设备向右移动16px，显著减少右边空白 */
+  }
+  
+  .mobile-nav {
+    display: block !important;
+  }
+  
+  .mobile-nav-link {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* 特殊设备支持 - 确保在所有可能的移动设备上都能正常显示 */
+@media screen and (max-device-width: 896px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    margin-right: 5px; /* 特殊设备向右移动16px，显著减少右边空白 */
+  }
+  
+  .mobile-nav {
+    display: block !important;
+  }
+}
+
+/* iOS Safari 特殊处理 */
+@media screen and (-webkit-min-device-pixel-ratio: 1) and (max-device-width: 896px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  
+  .mobile-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: right;
+    margin-right: 5px; /* iOS Safari 向右移动16px，显著减少右边空白 */
+  }
+  
+  .mobile-nav {
+    display: block !important;
   }
 }
 </style> 

@@ -21,11 +21,7 @@ class Settings(BaseSettings):
             # 默认开发环境配置
             return [
                 "http://localhost:3300",
-                "http://localhost:3301", 
-                "http://localhost:5173",
-                "http://127.0.0.1:3300",
-                "http://127.0.0.1:3301",
-                "http://127.0.0.1:5173"
+                "http://127.0.0.1:3300"
             ]
     DATABASE_URL: str = "mysql+pymysql://root:fzbird20250615@192.168.5.117:3306/gallerydb?charset=utf8mb4"
     @property
@@ -55,5 +51,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",  # 忽略额外的字段，避免启动失败
     )
 settings = Settings() 

@@ -299,7 +299,7 @@ update_env_value "BACKEND_CORS_ORIGINS" "$CORS_ORIGINS"
 update_env_value "DATABASE_URL" "$DATABASE_URL"
 update_env_value "# DEPLOYMENT_ENV" "$ENV_TYPE"
 update_env_value "# DEPLOYMENT_MODE" "$CONFIG_TYPE"
-update_env_value "SERVER_IP" "$SERVER_IP"
+update_env_value "# SERVER_IP" "$SERVER_IP"
 update_env_value "# LAST_UPDATED" "$(date '+%Y-%m-%d %H:%M:%S')"
 
 echo "✅ 后端环境配置已更新：backend/.env"

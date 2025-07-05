@@ -1,25 +1,27 @@
 <script setup>
-import { onMounted, onUnmounted, ref, computed, watch } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { useGalleryStore } from '@/stores/gallery';
 import { useAuthStore } from '@/stores/auth';
 import { usePageTitle } from '@/utils/page-title';
 import { storeToRefs } from 'pinia';
-import { NSpin, NButton, NTag, NSpace, NIcon } from 'naive-ui';
+import { NSpin, NButton, NTag, NSpace, NIcon, NCard, NPagination, NEmpty } from 'naive-ui';
 import { useRouter } from 'vue-router';
 import { HeartOutline as LikeIcon, BookmarkOutline as BookmarkIcon, ImageOutline as ImageIcon, HomeOutline as HomeIcon, PersonOutline as UserIcon } from '@vicons/ionicons5';
 import AppFooter from '@/components/AppFooter.vue';
 import { API_BASE_URL } from '@/api/api.js';
+import GalleryGrid from '@/components/GalleryGrid.vue';
 
 const router = useRouter();
 const galleryStore = useGalleryStore();
 const authStore = useAuthStore();
 const { clearCustomTitle } = usePageTitle();
 
-const { galleries, isLoading, hasMore } = storeToRefs(galleryStore);
+const { galleries, isLoading, hasMore, loading, error, pagination } = storeToRefs(galleryStore);
 const { isAuthenticated } = storeToRefs(authStore);
 
 const sentinel = ref(null);
 const currentPage = ref(1);
+const pageSize = 12;
 
 const loadMoreGalleries = () => {
   if (hasMore.value && !isLoading.value) {
@@ -110,7 +112,7 @@ onUnmounted(() => {
               <div class="gallery-cover">
                 <img 
                   v-if="gallery.coverImage && gallery.coverImage.image_url" 
-                  :src="`${API_BASE_URL}${gallery.coverImage.image_url}`" 
+                  :src="`${API_BASE_URL()}${gallery.coverImage.image_url}`" 
                   :alt="gallery.title"
                   class="cover-image"
                   loading="lazy"
@@ -186,8 +188,6 @@ onUnmounted(() => {
     <AppFooter theme-color="#667eea" />
   </div>
 </template>
-
-
 
 <style scoped>
 .gallery-home {

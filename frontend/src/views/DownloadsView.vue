@@ -154,7 +154,7 @@ onMounted(() => {
               <div class="gallery-cover">
                 <img 
                   v-if="gallery.coverImage && gallery.coverImage.image_url" 
-                  :src="`${API_BASE_URL}${gallery.coverImage.image_url}`" 
+                  :src="`${API_BASE_URL()}${gallery.coverImage.image_url}`" 
                   :alt="gallery.title"
                   class="cover-image"
                   loading="lazy"
@@ -519,7 +519,7 @@ onMounted(() => {
   }
 
   .page-title {
-    font-size: 28px;
+    font-size: 24px; /* 减小标题尺寸 */
   }
 
   .page-subtitle {
@@ -529,50 +529,205 @@ onMounted(() => {
   .page-header {
     padding: 16px 0;
   }
+  
+  .breadcrumb {
+    margin-bottom: 12px;
+  }
+  
+  .page-title-section {
+    margin-bottom: 16px;
+  }
+  
+  .main-content {
+    padding: 24px 0; /* 减少主内容区padding */
+  }
+  
+  .downloads-stats {
+    margin-bottom: 24px; /* 减少统计区下方间距 */
+  }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px; /* 减少统计项间距 */
+    margin-top: 12px;
+  }
+  
+  .stats-grid :deep(.n-statistic) {
+    text-align: center;
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-label) {
+    font-size: 12px; /* 减小标签字体 */
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-value) {
+    font-size: 18px; /* 减小数值字体 */
   }
 
   .top-three-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px; /* 减少前三名卡片间距 */
+  }
+  
+  .top-three-section {
+    margin-bottom: 24px;
   }
 
   .section-title h2 {
     font-size: 20px;
   }
+  
+  .section-title {
+    margin-bottom: 20px;
+  }
+  
+  .stats-card :deep(.n-card-header) {
+    padding: 12px 16px; /* 减少卡片头部padding */
+  }
+  
+  .stats-card :deep(.n-card__content) {
+    padding: 12px 16px; /* 减少卡片内容padding */
+  }
+  
+  .gallery-cover {
+    height: 160px; /* 减少前三名图片高度 */
+  }
+  
+  .gallery-title {
+    font-size: 16px;
+  }
+  
+  .gallery-author {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
 
   .download-stats {
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row; /* 保持水平排列 */
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  
+  .downloads-count {
+    font-size: 14px;
+  }
+  
+  .conversion-rate {
+    font-size: 11px;
   }
 
   .other-stats {
     gap: 12px;
   }
+  
+  .stat-item {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 480px) {
+  .page-title {
+    font-size: 20px; /* 超小屏幕进一步减小 */
+  }
+  
+  .page-subtitle {
+    font-size: 13px;
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  .main-content {
+    padding: 16px 0;
+  }
+  
+  .downloads-stats {
+    margin-bottom: 16px;
+  }
+
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* 超小屏幕单列显示 */
+    gap: 8px;
   }
-
-  .top-gallery-card {
-    padding: 16px;
+  
+  .stats-grid :deep(.n-statistic .n-statistic-label) {
+    font-size: 11px;
   }
-
-  .gallery-title {
+  
+  .stats-grid :deep(.n-statistic .n-statistic-value) {
     font-size: 16px;
   }
 
+  .top-gallery-card {
+    padding: 12px; /* 减少卡片内边距 */
+  }
+  
+  .gallery-cover {
+    height: 140px; /* 进一步减小图片高度 */
+    margin-bottom: 12px;
+  }
+
+  .gallery-title {
+    font-size: 15px;
+  }
+  
+  .gallery-author {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
   .rank-badge {
-    left: 16px;
+    left: 12px; /* 调整徽章位置 */
+    padding: 4px 8px;
   }
 
   .heat-level {
-    right: 16px;
+    right: 12px; /* 调整热度标签位置 */
+  }
+  
+  .download-stats {
+    flex-direction: column; /* 超小屏幕垂直排列 */
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+  }
+  
+  .downloads-count {
+    font-size: 13px;
+  }
+  
+  .conversion-rate {
+    font-size: 10px;
+  }
+  
+  .other-stats {
+    gap: 8px;
+  }
+  
+  .stat-item {
+    font-size: 12px;
+  }
+  
+  .section-title h2 {
+    font-size: 18px;
+  }
+  
+  .section-title {
+    margin-bottom: 16px;
+  }
+  
+  .top-three-section {
+    margin-bottom: 16px;
+  }
+  
+  .stats-card :deep(.n-card-header) {
+    padding: 10px 12px;
+  }
+  
+  .stats-card :deep(.n-card__content) {
+    padding: 10px 12px;
   }
 }
 

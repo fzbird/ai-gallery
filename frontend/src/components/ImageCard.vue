@@ -80,7 +80,7 @@ async function handleDeleteImage() {
 
       <template #cover>
         <img 
-          :src="`${API_BASE_URL}${props.image.image_url}`" 
+          :src="`${API_BASE_URL()}${props.image.image_url}`" 
           :alt="props.image.title"
           class="image"
           loading="lazy"

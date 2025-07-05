@@ -27,7 +27,7 @@ const imageCountText = computed(() => {
 const coverImageUrl = computed(() => {
   // 优先使用 cover_image
   if (props.gallery.cover_image && props.gallery.cover_image.image_url) {
-    return `${API_BASE_URL}${props.gallery.cover_image.image_url}`;
+    return `${API_BASE_URL()}${props.gallery.cover_image.image_url}`;
   }
   
   // 兼容处理：如果没有cover_image，使用第一张图片
@@ -35,7 +35,7 @@ const coverImageUrl = computed(() => {
     const firstImage = props.gallery.images[0];
     
     if (firstImage.image_url && typeof firstImage.image_url === 'string' && firstImage.image_url.trim() !== '') {
-      return `${API_BASE_URL}${firstImage.image_url}`;
+      return `${API_BASE_URL()}${firstImage.image_url}`;
     }
   }
   

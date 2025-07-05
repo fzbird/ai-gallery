@@ -127,7 +127,7 @@ onMounted(() => {
               <div class="gallery-cover">
                 <img 
                   v-if="gallery.coverImage && gallery.coverImage.image_url" 
-                  :src="`${API_BASE_URL}${gallery.coverImage.image_url}`" 
+                  :src="`${API_BASE_URL()}${gallery.coverImage.image_url}`" 
                   :alt="gallery.title"
                   class="cover-image"
                   loading="lazy"
@@ -260,11 +260,36 @@ onMounted(() => {
   border: 1px solid rgba(255, 107, 157, 0.1);
 }
 
+.stats-card :deep(.n-card-header) {
+  padding: 12px 20px 8px 20px; /* 减少头部padding */
+}
+
+.stats-card :deep(.n-card__content) {
+  padding: 8px 20px 16px 20px; /* 减少内容padding */
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 24px;
-  margin-top: 16px;
+  grid-template-columns: 1fr 1fr; /* 固定2列布局 */
+  grid-template-rows: 1fr 1fr; /* 固定2行布局 */
+  gap: 12px 20px; /* 垂直间距12px，水平间距20px */
+  margin-top: 8px; /* 减少顶部间距 */
+}
+
+.stats-grid :deep(.n-statistic) {
+  text-align: center;
+}
+
+.stats-grid :deep(.n-statistic .n-statistic-label) {
+  font-size: 13px; /* 减小标签字体 */
+  color: #6b7280;
+  margin-bottom: 4px; /* 减少标签与数值间距 */
+}
+
+.stats-grid :deep(.n-statistic .n-statistic-value) {
+  font-size: 20px; /* 减小数值字体 */
+  font-weight: 600;
+  line-height: 1.2; /* 紧凑行高 */
 }
 
 /* 前三名展示 */
@@ -454,7 +479,7 @@ onMounted(() => {
   }
 
   .page-title {
-    font-size: 28px;
+    font-size: 24px; /* 减小标题尺寸 */
   }
 
   .page-subtitle {
@@ -464,38 +489,184 @@ onMounted(() => {
   .page-header {
     padding: 16px 0;
   }
+  
+  .breadcrumb {
+    margin-bottom: 12px;
+  }
+  
+  .page-title-section {
+    margin-bottom: 16px;
+  }
+  
+  .main-content {
+    padding: 20px 0; /* 进一步减少主内容区padding */
+  }
+  
+  .favorites-stats {
+    margin-bottom: 20px; /* 进一步减少统计区下方间距 */
+  }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 8px; /* 进一步减少统计项间距 */
+    margin-top: 6px;
+  }
+  
+  .stats-grid :deep(.n-statistic) {
+    text-align: center;
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-label) {
+    font-size: 11px; /* 进一步减小标签字体 */
+    margin-bottom: 2px;
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-value) {
+    font-size: 16px; /* 进一步减小数值字体 */
+    line-height: 1.1;
   }
 
   .top-three-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 16px; /* 减少前三名卡片间距 */
+  }
+  
+  .top-three-section {
+    margin-bottom: 24px;
   }
 
   .section-title h2 {
     font-size: 20px;
   }
+  
+  .section-title {
+    margin-bottom: 20px;
+  }
+  
+  .stats-card :deep(.n-card-header) {
+    padding: 8px 12px 4px 12px; /* 进一步减少卡片头部padding */
+  }
+  
+  .stats-card :deep(.n-card__content) {
+    padding: 4px 12px 12px 12px; /* 进一步减少卡片内容padding */
+  }
+  
+  .gallery-cover {
+    height: 160px; /* 减少前三名图片高度 */
+  }
+  
+  .gallery-title {
+    font-size: 16px;
+  }
+  
+  .gallery-author {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
 
   .gallery-stats {
-    flex-direction: column;
+    flex-direction: row; /* 保持水平排列 */
+    justify-content: space-around; /* 均匀分布 */
     gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .bookmarks-count {
+    font-size: 14px;
+  }
+  
+  .likes-info {
+    font-size: 13px;
   }
 }
 
 @media (max-width: 480px) {
+  .page-title {
+    font-size: 20px; /* 超小屏幕进一步减小 */
+  }
+  
+  .page-subtitle {
+    font-size: 13px;
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  .main-content {
+    padding: 12px 0; /* 更紧凑的主内容区 */
+  }
+  
+  .favorites-stats {
+    margin-bottom: 12px; /* 更紧凑的统计区间距 */
+  }
+
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* 超小屏幕单列显示 */
+    gap: 6px; /* 更紧凑的间距 */
+    margin-top: 4px;
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-label) {
+    font-size: 10px; /* 更小的标签字体 */
+    margin-bottom: 1px;
+  }
+  
+  .stats-grid :deep(.n-statistic .n-statistic-value) {
+    font-size: 14px; /* 更小的数值字体 */
+    line-height: 1.0;
   }
 
   .top-gallery-card {
-    padding: 16px;
+    padding: 12px; /* 减少卡片内边距 */
+  }
+  
+  .gallery-cover {
+    height: 140px; /* 进一步减小图片高度 */
+    margin-bottom: 12px;
   }
 
   .gallery-title {
-    font-size: 16px;
+    font-size: 15px;
+  }
+  
+  .gallery-author {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .gallery-stats {
+    flex-direction: column; /* 超小屏幕垂直排列 */
+    gap: 6px;
+    align-items: center;
+  }
+  
+  .bookmarks-count {
+    font-size: 13px;
+  }
+  
+  .likes-info {
+    font-size: 12px;
+  }
+  
+  .section-title h2 {
+    font-size: 18px;
+  }
+  
+  .section-title {
+    margin-bottom: 16px;
+  }
+  
+  .top-three-section {
+    margin-bottom: 16px;
+  }
+  
+  .stats-card :deep(.n-card-header) {
+    padding: 6px 8px 2px 8px; /* 更紧凑的卡片头部 */
+  }
+  
+  .stats-card :deep(.n-card__content) {
+    padding: 2px 8px 8px 8px; /* 更紧凑的卡片内容 */
   }
 }
 
