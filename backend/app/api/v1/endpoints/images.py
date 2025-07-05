@@ -67,14 +67,31 @@ def _map_image_to_schema(db: Session, image: models.Image, user_id: Optional[int
     image_schema = schemas.Image.model_validate(image)
 
     # 1. 添加图片URL
-    if image.filepath and str(image.filepath).strip():
-        file_path = Path(str(image.filepath))
+    # 安全获取filepath字符串
+    filepath_str = ""
+    if hasattr(image, 'filepath') and image.filepath is not None:
+        filepath_str = str(image.filepath).strip()
+    
+    if filepath_str:
+        file_path = Path(filepath_str)
         upload_dir = Path(settings.UPLOAD_DIRECTORY)
         try:
             relative_path = file_path.relative_to(upload_dir)
             image_schema.image_url = f"/uploads/{relative_path}".replace("\\", "/")
         except ValueError:
-            image_schema.image_url = f"/uploads/{image.filename}"
+            # 如果relative_to失败，尝试从filepath中手动提取相对路径
+            normalized_filepath = filepath_str.replace("\\", "/")
+            uploads_str = "uploads/"
+            
+            # 查找uploads/在路径中的位置
+            uploads_index = normalized_filepath.find(uploads_str)
+            if uploads_index != -1:
+                # 提取从uploads/之后的部分作为相对路径
+                relative_part = normalized_filepath[uploads_index + len(uploads_str):]
+                image_schema.image_url = f"/uploads/{relative_part}"
+            else:
+                # 如果filepath中没有uploads，使用filename
+                image_schema.image_url = f"/uploads/{image.filename}"
     else:
         image_schema.image_url = f"/uploads/{image.filename}"
 

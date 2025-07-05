@@ -15,17 +15,33 @@ def _add_image_url_to_image(image):
     if not image:
         return
     
-    if hasattr(image, 'filepath') and image.filepath and str(image.filepath).strip():
+    # 安全获取filepath字符串
+    filepath_str = ""
+    if hasattr(image, 'filepath') and image.filepath is not None:
+        filepath_str = str(image.filepath).strip()
+    
+    if filepath_str:
         # 将filepath转换为相对于uploads目录的路径
-        file_path = Path(str(image.filepath))
+        file_path = Path(filepath_str)
         upload_dir = Path(settings.UPLOAD_DIRECTORY)
         try:
             # 计算相对路径
             relative_path = file_path.relative_to(upload_dir)
             image.image_url = f"/uploads/{relative_path}".replace("\\", "/")
         except ValueError:
-            # 如果filepath不在uploads目录下，使用filename
-            image.image_url = f"/uploads/{image.filename}"
+            # 如果relative_to失败，尝试从filepath中手动提取相对路径
+            normalized_filepath = filepath_str.replace("\\", "/")
+            uploads_str = "uploads/"
+            
+            # 查找uploads/在路径中的位置
+            uploads_index = normalized_filepath.find(uploads_str)
+            if uploads_index != -1:
+                # 提取从uploads/之后的部分作为相对路径
+                relative_part = normalized_filepath[uploads_index + len(uploads_str):]
+                image.image_url = f"/uploads/{relative_part}"
+            else:
+                # 如果filepath中没有uploads，使用filename
+                image.image_url = f"/uploads/{image.filename}"
     else:
         # 如果没有filepath，使用filename
         image.image_url = f"/uploads/{image.filename}"
