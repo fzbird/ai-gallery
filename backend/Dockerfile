@@ -7,8 +7,8 @@ WORKDIR /app
 # --- Install Dependencies ---
 # Copy requirements first to leverage Docker cache
 COPY ./requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple --trusted-host pypi.tuna.tsinghua.edu.cn
+RUN pip install --upgrade pip -i https://mirrors.cloud.tencent.com/pypi/simple --trusted-host mirrors.cloud.tencent.com
+RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple --trusted-host mirrors.cloud.tencent.com
 
 # Copy entrypoint script
 COPY ./entrypoint.sh /app/entrypoint.sh

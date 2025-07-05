@@ -204,29 +204,34 @@ def get_categories_stats(db: Session = Depends(get_db)):
     # 获取基础统计
     basic_stats = crud.category.get_category_stats(db)
     
-    # 获取原有的图集统计（向后兼容）
+    # 获取所有分类
     categories = db.query(models.Category).all()
-    galleries = db.query(models.Gallery).all()
     
-    # 统计每个分类的图集数量
-    category_counts = {}
-    for gallery in galleries:
-        if gallery.category_id is not None:
-            category_counts[gallery.category_id] = category_counts.get(gallery.category_id, 0) + 1
-    
-    # 转换为前端可用的格式
+    # 正确统计每个分类的图集数量（包括直接的和间接的）
     category_gallery_stats = []
+    
     for category in categories:
-        count = category_counts.get(category.id, 0)
-        all_count = category.get_all_content_count()  # 包含子分类的总数
+        # 统计直接属于该分类的图集数量
+        # 由于Gallery继承自ContentBase，我们可以直接查询Gallery表并过滤category_id
+        direct_galleries = db.query(models.Gallery).filter(
+            models.Gallery.category_id == category.id
+        ).count()
+        
+        # 统计包含所有子分类的图集数量
+        all_descendants = category.get_descendants()
+        descendant_ids = [desc.id for desc in all_descendants] + [category.id]
+        
+        all_galleries = db.query(models.Gallery).filter(
+            models.Gallery.category_id.in_(descendant_ids)
+        ).count()
         
         category_gallery_stats.append({
             "id": category.id,
             "name": category.name,
             "full_path": category.get_full_path(),
             "level": category.level,
-            "gallery_count": count,
-            "all_gallery_count": all_count,
+            "gallery_count": direct_galleries,  # 直接属于该分类的图集数量
+            "all_gallery_count": all_galleries,  # 包含子分类的总图集数量
             "has_children": category.has_children
         })
     

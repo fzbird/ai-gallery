@@ -2,23 +2,23 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 
-# Install pnpm (faster than npm)
-RUN npm install -g pnpm --registry=https://registry.npmmirror.com
+# Configure npm for better performance
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set cache /tmp/.npm && \
+    npm config set prefer-offline true && \
+    npm config set progress false && \
+    npm config set fund false && \
+    npm config set audit false
 
-# Configure pnpm for better performance
-RUN pnpm config set registry https://registry.npmmirror.com
-
-# Copy package files and install dependencies with cache mount
+# Copy package files and install dependencies
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    --mount=type=cache,target=/tmp/.pnpm-store \
-    pnpm install --frozen-lockfile=false --silent
+RUN npm ci --only=production=false --silent
 
 # Copy source code (excluding files in .dockerignore)
 COPY . .
 
 # Build the application
-RUN pnpm run build
+RUN npm run build
 
 # --- Production Stage ---
 FROM nginx:stable-alpine

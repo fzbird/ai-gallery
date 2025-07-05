@@ -37,11 +37,27 @@ class CRUDCategory(CRUDBase[Category, CategoryCreate, CategoryUpdate]):
         
         categories = query.all()
         
+        # 为了正确统计图集数量，需要导入Gallery模型
+        from app.models.gallery import Gallery
+        
         # 构建树形结构
         category_map = {}
         tree_nodes = []
         
         for category in categories:
+            # 统计直接属于该分类的图集数量
+            direct_galleries = db.query(Gallery).filter(
+                Gallery.category_id == category.id
+            ).count()
+            
+            # 统计包含所有子分类的图集数量
+            all_descendants = category.get_descendants()
+            descendant_ids = [desc.id for desc in all_descendants] + [category.id]
+            
+            all_galleries = db.query(Gallery).filter(
+                Gallery.category_id.in_(descendant_ids)
+            ).count()
+            
             node = CategoryTreeNode(
                 id=category.id,
                 name=category.name,
@@ -50,8 +66,8 @@ class CRUDCategory(CRUDBase[Category, CategoryCreate, CategoryUpdate]):
                 level=category.level,
                 sort_order=category.sort_order,
                 full_path=category.get_full_path(),
-                content_count=len(category.contents),
-                all_content_count=category.get_all_content_count(),
+                content_count=direct_galleries,  # 直接图集数量
+                all_content_count=all_galleries,  # 包含子分类的总图集数量
                 children=[]
             )
             category_map[category.id] = node

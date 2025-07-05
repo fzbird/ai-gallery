@@ -106,7 +106,7 @@ class CRUDGallery(CRUDBase[Gallery, GalleryCreate, GalleryUpdate]):
             .all()
         )
     
-    def get_multi_with_images_sorted(self, db: Session, *, skip: int = 0, limit: int = 100, sort_field: str = None, sort_order: str = "desc") -> List[Gallery]:
+    def get_multi_with_images_sorted(self, db: Session, *, skip: int = 0, limit: int = 100, sort_field: Optional[str] = None, sort_order: str = "desc") -> List[Gallery]:
         """获取多个图集（包含图片信息），支持排序"""
         query = (
             db.query(self.model)

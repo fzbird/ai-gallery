@@ -49,7 +49,7 @@ def get_current_user(
 
 def get_current_user_optional(
     db: Session = Depends(get_db), token: Optional[str] = Depends(reusable_oauth2_optional)
-) -> models.User | None:
+) -> Optional[models.User]:
     if not token:
         return None
     try:
