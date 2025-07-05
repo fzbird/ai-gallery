@@ -10,39 +10,41 @@ from app.core.config import settings
 
 router = APIRouter()
 
+def _add_image_url_to_image(image):
+    """为单个图片对象添加image_url字段"""
+    if not image:
+        return
+    
+    if hasattr(image, 'filepath') and image.filepath and str(image.filepath).strip():
+        # 将filepath转换为相对于uploads目录的路径
+        file_path = Path(str(image.filepath))
+        upload_dir = Path(settings.UPLOAD_DIRECTORY)
+        try:
+            # 计算相对路径
+            relative_path = file_path.relative_to(upload_dir)
+            image.image_url = f"/uploads/{relative_path}".replace("\\", "/")
+        except ValueError:
+            # 如果filepath不在uploads目录下，使用filename
+            image.image_url = f"/uploads/{image.filename}"
+    else:
+        # 如果没有filepath，使用filename
+        image.image_url = f"/uploads/{image.filename}"
+
 def _add_image_urls_to_gallery(gallery):
-    """为图集中的图片添加image_url字段"""
+    """为图集中的所有图片添加image_url字段"""
+    if not gallery:
+        return
+    
+    # 处理图集中的所有图片
     if hasattr(gallery, 'images') and gallery.images:
         for image in gallery.images:
-            if image.filepath and str(image.filepath).strip():
-                # 将filepath转换为相对于uploads目录的路径
-                file_path = Path(str(image.filepath))
-                upload_dir = Path(settings.UPLOAD_DIRECTORY)
-                try:
-                    # 计算相对路径
-                    relative_path = file_path.relative_to(upload_dir)
-                    image.image_url = f"/uploads/{relative_path}".replace("\\", "/")
-                except ValueError:
-                    # 如果filepath不在uploads目录下，使用filename
-                    image.image_url = f"/uploads/{image.filename}"
-            else:
-                # 如果没有filepath，使用filename
-                image.image_url = f"/uploads/{image.filename}"
+            _add_image_url_to_image(image)
     
     # 处理封面图片
     if hasattr(gallery, 'cover_image') and gallery.cover_image:
-        if gallery.cover_image.filepath and str(gallery.cover_image.filepath).strip():
-            file_path = Path(str(gallery.cover_image.filepath))
-            upload_dir = Path(settings.UPLOAD_DIRECTORY)
-            try:
-                relative_path = file_path.relative_to(upload_dir)
-                gallery.cover_image.image_url = f"/uploads/{relative_path}".replace("\\", "/")
-            except ValueError:
-                gallery.cover_image.image_url = f"/uploads/{gallery.cover_image.filename}"
-        else:
-            gallery.cover_image.image_url = f"/uploads/{gallery.cover_image.filename}"
+        _add_image_url_to_image(gallery.cover_image)
 
-@router.get("/feed", response_model=List[schemas.Gallery])
+@router.get("/feed", response_model=List[schemas.GalleryWithImages])
 def read_gallery_feed(
     db: Session = Depends(dependencies.get_db),
     skip: int = 0,
@@ -53,7 +55,18 @@ def read_gallery_feed(
     获取当前用户的图集推荐Feed
     """
     # 简单实现：获取用户关注的人的图集 + 最新图集
-    galleries = crud.gallery.get_recent(db, skip=skip, limit=limit)
+    galleries = crud.gallery.get_multi_with_images(db, skip=skip, limit=limit)
+    
+    # 为每个gallery添加当前用户相关信息
+    if current_user:
+        for gallery in galleries:
+            setattr(gallery, 'liked_by_current_user', False)
+            setattr(gallery, 'bookmarked_by_current_user', False)
+    
+    # 为所有图集的图片添加image_url字段
+    for gallery in galleries:
+        _add_image_urls_to_gallery(gallery)
+    
     return galleries
 
 @router.get("/count")

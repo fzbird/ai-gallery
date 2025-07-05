@@ -30,8 +30,8 @@ const loadMoreGalleries = () => {
 // 瀑布流布局用的图集数据
 const displayedGalleries = computed(() => {
   return galleries.value.map(gallery => {
-    // 获取封面图片
-    const coverImage = gallery.images && gallery.images.length > 0 ? gallery.images[0] : null;
+    // 获取封面图片 - 优先使用cover_image，如果没有则使用第一张图片
+    const coverImage = gallery.cover_image || (gallery.images && gallery.images.length > 0 ? gallery.images[0] : null);
     
     // 使用真实标签数据（前5个）
     const tags = gallery.tags ? gallery.tags.slice(0, 5) : [];

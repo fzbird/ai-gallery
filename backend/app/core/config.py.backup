@@ -7,26 +7,15 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "在线图片库系统"
     API_V1_STR: str = "/api/v1"
 
-    # CORS配置 - 支持环境变量配置
-    BACKEND_CORS_ORIGINS: str = ""
-    
-    @property
-    def get_backend_cors_origins(self) -> list[str]:
-        """获取CORS允许的源列表，支持环境变量配置"""
-        if self.BACKEND_CORS_ORIGINS:
-            # 从环境变量读取，支持逗号分隔的字符串
-            origins = [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",") if origin.strip()]
-            return origins
-        else:
-            # 默认开发环境配置
-            return [
-                "http://localhost:3300",
-                "http://localhost:3301", 
-                "http://localhost:5173",
-                "http://127.0.0.1:3300",
-                "http://127.0.0.1:3301",
-                "http://127.0.0.1:5173"
-            ]
+    BACKEND_CORS_ORIGINS: list[str] = [
+        "http://localhost:3300",
+        "http://localhost:3301", 
+        "http://localhost:5173",
+        "http://127.0.0.1:3300",
+        "http://127.0.0.1:3301",
+        "http://127.0.0.1:5173",
+        "http://192.168.5.117:3300"
+    ]
     DATABASE_URL: str = "mysql+pymysql://root:fzbird20250615@192.168.5.117:3306/gallerydb?charset=utf8mb4"
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:

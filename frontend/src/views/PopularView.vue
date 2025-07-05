@@ -31,7 +31,7 @@ const topThree = computed(() => {
   return galleries.value.slice(0, 3).map((gallery, index) => ({
     ...gallery,
     rank: index + 1,
-    coverImage: gallery.images && gallery.images.length > 0 ? gallery.images[0] : null,
+          coverImage: gallery.cover_image || (gallery.images && gallery.images.length > 0 ? gallery.images[0] : null),
     imageCount: gallery.image_count || (gallery.images ? gallery.images.length : 0),
     likesCount: gallery.likes_count || 0,
     bookmarksCount: gallery.bookmarks_count || 0,

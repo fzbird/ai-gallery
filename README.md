@@ -2,6 +2,26 @@
 
 一个基于 FastAPI + Vue.js 的现代化图片库管理系统，支持图片上传、分类管理、用户互动、内容推荐等功能。
 
+## 🎉 最新更新
+
+### 🚀 一键部署功能
+- **智能化部署脚本** - 自动检测环境、配置CORS、更新数据库连接
+- **多环境支持** - 开发环境(3300端口)、生产环境(80端口)、灵活环境(双端口)
+- **自动化配置** - IP地址检测、环境变量自动生成和更新
+- **端口灵活配置** - 支持不同的端口配置方案和反向代理模式
+
+### 🔧 环境配置改进
+- **配置模板系统** - 提供默认配置模板，支持手动修改
+- **智能配置更新** - 保留用户手动配置，仅更新必要的部署配置
+- **CORS自动配置** - 根据部署环境自动配置跨域访问权限
+- **数据库自动配置** - MySQL服务器地址自动更新
+
+### 🛠️ 部署体验优化
+- **图片显示修复** - 修复了图集封面和图片显示问题
+- **统一图片URL处理** - 前后端统一的图片路径处理机制
+- **容器化改进** - 多种Docker Compose配置支持不同部署场景
+- **故障排除指南** - 详细的问题诊断和解决方案
+
 ## ✨ 功能特性
 
 ### 🔐 用户管理
@@ -39,6 +59,14 @@
 - **数据统计** - 用户、内容、互动等多维度数据分析
 - **内容审核** - 图片、评论的审核管理
 
+### 🚀 部署与运维
+- **一键部署** - 智能化部署脚本，自动配置环境
+- **多环境支持** - 开发、生产、灵活环境配置
+- **自动化配置** - IP地址检测、CORS配置、数据库连接自动化
+- **端口灵活配置** - 支持80端口、3300端口或双端口模式
+- **环境变量管理** - 智能的环境配置文件管理
+- **容器化部署** - Docker容器化，支持多种部署模式
+
 ## 🛠️ 技术栈
 
 ### 后端技术
@@ -70,9 +98,51 @@
 - Python 3.8+
 - Node.js 16+
 - MySQL 8.0+
-- Docker & Docker Compose (可选)
+- Docker & Docker Compose (推荐)
 
-### 使用 Docker 部署（推荐）
+### 🚀 一键部署（推荐）
+
+1. **克隆项目**
+```bash
+git clone <repository-url>
+cd Gallery
+```
+
+2. **运行一键部署脚本**
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+3. **选择部署环境**
+```
+选择部署环境：
+1. 开发环境 (localhost:3300)
+2. 生产环境 (localhost:80)
+3. 灵活环境 (localhost:3300 和 localhost:80)
+```
+
+4. **选择API配置模式**
+```
+选择API配置模式：
+1. 反向代理模式 (推荐) - 通过nginx代理
+2. 环境变量模式 - 直接访问后端API
+```
+
+5. **自动化配置**
+脚本会自动：
+- 检测服务器IP地址
+- 生成/更新环境配置文件
+- 配置CORS跨域设置
+- 更新数据库连接地址
+- 构建并启动所有服务
+
+6. **访问应用**
+- 前端界面：http://服务器IP:端口
+- 后端API：http://服务器IP:8000
+- API文档：http://服务器IP:8000/docs
+
+### 🔧 手动Docker部署
 
 1. **克隆项目**
 ```bash
@@ -82,13 +152,20 @@ cd Gallery
 
 2. **配置环境变量**
 ```bash
-# 复制并编辑环境配置
-cp .env.example .env
-# 编辑 .env 文件，配置数据库连接等信息
+# 复制并编辑环境配置模板
+cp backend/env.template backend/.env
+# 编辑 backend/.env 文件，配置数据库连接等信息
 ```
 
-3. **启动服务**
+3. **选择部署环境**
 ```bash
+# 开发环境（仅3300端口）
+docker-compose -f docker-compose.dev.yml up -d
+
+# 生产环境（仅80端口）
+docker-compose -f docker-compose.prod.yml up -d
+
+# 灵活环境（双端口支持）
 docker-compose up -d
 ```
 
@@ -102,7 +179,7 @@ docker-compose exec backend python initial_data.py
 ```
 
 5. **访问应用**
-- 前端界面：http://localhost:3000
+- 前端界面：http://localhost:3300 或 http://localhost:80
 - 后端API：http://localhost:8000
 - API文档：http://localhost:8000/docs
 
@@ -169,31 +246,56 @@ npm run build
 
 ## 🔧 配置说明
 
-### 环境变量
+### 环境配置
 
-#### 后端环境变量
+#### 后端环境配置 (backend/.env)
 ```bash
+# Gallery 后端环境配置
+# 可以手动修改此文件，或使用deploy.sh自动配置
+
+# CORS跨域配置
+# 支持逗号分隔的多个地址
+BACKEND_CORS_ORIGINS=http://localhost:3300,http://127.0.0.1:3300
+
 # 数据库配置
-DATABASE_URL=mysql://root:password@localhost:3306/gallery_db
+# MySQL服务器地址 (自动部署时会更新为实际服务器地址)
+DATABASE_URL=mysql+pymysql://用户名:密码@服务器IP:端口/数据库名?charset=utf8mb4
 
-# 安全配置
-SECRET_KEY=your-jwt-secret-key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# 文件上传配置
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760  # 10MB
-
-# CORS配置
-ALLOWED_ORIGINS=["http://localhost:3000"]
+# 环境信息 (由部署脚本自动更新)
+# DEPLOYMENT_ENV=开发环境
+# DEPLOYMENT_MODE=手动配置
+# SERVER_IP=localhost
+# LAST_UPDATED=手动配置
 ```
 
-#### 前端环境变量
+#### 前端环境配置
+
+**反向代理模式（推荐）**：
+- 前端通过nginx代理访问后端
+- 无需额外配置，自动处理API路由
+
+**环境变量模式**：
 ```bash
-# API地址配置
-VITE_API_URL=http://localhost:8000
+# 前端环境变量 (frontend/.env)
+VITE_API_URL=http://服务器IP:8000
 ```
+
+### 多环境支持
+
+#### 开发环境
+- 端口：3300
+- 适用于：开发测试
+- 配置文件：`docker-compose.dev.yml`
+
+#### 生产环境
+- 端口：80
+- 适用于：生产部署
+- 配置文件：`docker-compose.prod.yml`
+
+#### 灵活环境
+- 端口：3300 + 80
+- 适用于：多场景兼容
+- 配置文件：`docker-compose.yml`
 
 ### 系统配置
 
@@ -265,6 +367,7 @@ Gallery/
 │   │   └── services/       # 业务逻辑
 │   ├── alembic/            # 数据库迁移
 │   ├── uploads/            # 文件上传目录
+│   ├── env.template        # 环境配置模板
 │   └── requirements.txt    # Python依赖
 ├── frontend/               # 前端代码
 │   ├── src/
@@ -275,7 +378,12 @@ Gallery/
 │   │   └── utils/         # 工具函数
 │   ├── public/            # 静态资源
 │   └── package.json       # Node.js依赖
-├── docker-compose.yml      # Docker编排
+├── docker-compose.yml      # Docker编排（灵活环境）
+├── docker-compose.dev.yml  # 开发环境配置
+├── docker-compose.prod.yml # 生产环境配置
+├── deploy.sh              # 一键部署脚本
+├── DOCKER_PORT_GUIDE.md   # 端口配置指南
+├── ENV_CONFIG_IMPROVEMENT.md # 环境配置改进说明
 └── README.md              # 项目说明
 ```
 
@@ -320,21 +428,50 @@ Gallery/
 
 ### 常见问题
 
-1. **数据库连接失败**
+1. **部署脚本运行失败**
+   - 确保脚本有执行权限：`chmod +x deploy.sh`
+   - 检查Docker和Docker Compose是否正确安装
+   - 确认当前用户有Docker权限
+
+2. **IP地址检测错误**
+   - 脚本自动检测IP，如果检测错误可手动编辑 `backend/.env` 文件
+   - Windows用户确保使用Git Bash或WSL运行脚本
+
+3. **端口冲突**
+   - 检查80端口或3300端口是否被其他服务占用
+   - 可以选择不同的部署环境避免冲突
+
+4. **CORS跨域错误**
+   - 一键部署脚本会自动配置CORS
+   - 如果手动配置，确保 `backend/.env` 中的 `BACKEND_CORS_ORIGINS` 包含正确的前端地址
+
+5. **数据库连接失败**
    - 检查MySQL服务是否启动
    - 验证数据库连接字符串配置
+   - 一键部署脚本会自动更新数据库地址
 
-2. **文件上传失败**
-   - 检查上传目录权限
-   - 验证文件大小限制设置
+6. **前端页面无法访问**
+   - 检查选择的部署环境对应的端口
+   - 确认nginx容器是否正常启动
+   - 检查防火墙设置
 
-3. **前端构建失败**
-   - 清除node_modules并重新安装依赖
-   - 检查Node.js版本兼容性
+7. **图片显示异常**
+   - 检查uploads目录权限
+   - 确认图片文件路径配置正确
 
-4. **API请求跨域错误**
-   - 检查后端CORS配置
-   - 验证前端API地址配置
+### 配置检查
+
+```bash
+# 检查当前配置
+cat backend/.env
+
+# 检查容器状态
+docker-compose ps
+
+# 检查端口使用
+netstat -tlnp | grep :80
+netstat -tlnp | grep :3300
+```
 
 ### 日志查看
 
@@ -347,6 +484,22 @@ docker-compose logs frontend
 
 # 查看数据库日志
 docker-compose logs db
+
+# 查看nginx日志
+docker-compose logs nginx
+```
+
+### 重新部署
+
+```bash
+# 停止所有服务
+docker-compose down
+
+# 清理容器和镜像（可选）
+docker system prune -a
+
+# 重新运行部署脚本
+./deploy.sh
 ```
 
 ## 🤝 贡献指南

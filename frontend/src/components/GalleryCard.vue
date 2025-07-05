@@ -23,8 +23,14 @@ const imageCountText = computed(() => {
   return `${count}P`;
 });
 
-// 使用computed计算封面图片URL
+// 使用computed计算封面图片URL - 统一使用coverImage字段
 const coverImageUrl = computed(() => {
+  // 优先使用 cover_image
+  if (props.gallery.cover_image && props.gallery.cover_image.image_url) {
+    return `${API_BASE_URL}${props.gallery.cover_image.image_url}`;
+  }
+  
+  // 兼容处理：如果没有cover_image，使用第一张图片
   if (props.gallery.images && Array.isArray(props.gallery.images) && props.gallery.images.length > 0) {
     const firstImage = props.gallery.images[0];
     
