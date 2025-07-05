@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth';
 import { message } from '@/utils/discrete-api';
+import { getApiBaseUrl } from '@/config/api';
 
 // Create a new Axios instance
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = getApiBaseUrl();
 const apiClient = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,
   headers: {

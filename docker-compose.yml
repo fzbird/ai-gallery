@@ -40,7 +40,10 @@ services:
     container_name: gallery_frontend
     restart: always
     ports:
-      - "3300:80" # Map host 3300 to container 80 for direct access if needed
+      - "3300:80" # 前端访问端口
+      - "80:80"   # 标准 HTTP 端口（用于反向代理）
+    depends_on:
+      - backend
     networks:
       - gallery-network
 
