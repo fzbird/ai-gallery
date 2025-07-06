@@ -10,9 +10,13 @@ COPY ./requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip -i https://mirrors.cloud.tencent.com/pypi/simple --trusted-host mirrors.cloud.tencent.com
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt -i https://mirrors.cloud.tencent.com/pypi/simple --trusted-host mirrors.cloud.tencent.com
 
-# Copy entrypoint script
+# Copy entrypoint script and fix permissions for Linux
 COPY ./entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+
+# Fix line endings and permissions for Linux compatibility
+RUN sed -i 's/\r$//' /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh && \
+    ls -la /app/entrypoint.sh
 
 # --- Copy Application Code ---
 COPY ./app /app/app
