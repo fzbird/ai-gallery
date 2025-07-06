@@ -183,19 +183,18 @@ onMounted(() => {
 }
 
 .stats-card :deep(.n-card-header) {
-  padding: 12px 20px 8px 20px; /* 减少头部padding */
+  padding: 8px 20px 4px 20px; /* 进一步减少头部padding */
 }
 
 .stats-card :deep(.n-card__content) {
-  padding: 8px 20px 16px 20px; /* 减少内容padding */
+  padding: 4px 20px 12px 20px; /* 进一步减少内容padding */
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 固定2列布局 */
-  grid-template-rows: 1fr 1fr; /* 固定2行布局 */
-  gap: 12px 20px; /* 垂直间距12px，水平间距20px */
-  margin-top: 8px; /* 减少顶部间距 */
+  grid-template-columns: repeat(4, 1fr); /* 超小屏也保持4列 */
+  gap: 4px; /* 最小间距 */
+  margin-top: 2px;
 }
 
 .stats-grid :deep(.n-statistic) {
@@ -203,15 +202,13 @@ onMounted(() => {
 }
 
 .stats-grid :deep(.n-statistic .n-statistic-label) {
-  font-size: 13px; /* 减小标签字体 */
-  color: #6b7280;
-  margin-bottom: 4px; /* 减少标签与数值间距 */
+  font-size: 9px; /* 最小标签字体 */
+  margin-bottom: 0px;
 }
 
 .stats-grid :deep(.n-statistic .n-statistic-value) {
-  font-size: 20px; /* 减小数值字体 */
-  font-weight: 600;
-  line-height: 1.2; /* 紧凑行高 */
+  font-size: 12px; /* 最小数值字体 */
+  line-height: 1.0;
 }
 
 .content-section-title {
@@ -267,10 +264,9 @@ onMounted(() => {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr 1fr; /* 保持2列布局 */
-    grid-template-rows: 1fr 1fr; /* 保持2行布局 */
-    gap: 8px 12px; /* 进一步减少间距：垂直8px，水平12px */
-    margin-top: 6px;
+    grid-template-columns: repeat(4, 1fr); /* 移动端也保持4列 */
+    gap: 8px; /* 减少间距 */
+    margin-top: 2px;
   }
   
   .stats-grid :deep(.n-statistic) {
@@ -278,13 +274,13 @@ onMounted(() => {
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 11px; /* 进一步减小标签字体 */
-    margin-bottom: 2px;
+    font-size: 10px; /* 移动端更小字体 */
+    margin-bottom: 1px;
   }
-  
+
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 16px; /* 进一步减小数值字体 */
-    line-height: 1.1;
+    font-size: 14px; /* 移动端更小数值 */
+    line-height: 1.0;
   }
 
   .content-section-title {
@@ -326,19 +322,18 @@ onMounted(() => {
   }
 
   .stats-grid {
-    grid-template-columns: 1fr 1fr; /* 超小屏幕也保持2列布局 */
-    grid-template-rows: 1fr 1fr; /* 超小屏幕也保持2行布局 */
-    gap: 6px 8px; /* 更紧凑的间距：垂直6px，水平8px */
-    margin-top: 4px;
+    grid-template-columns: repeat(4, 1fr); /* 超小屏也保持4列 */
+    gap: 4px; /* 最小间距 */
+    margin-top: 2px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 10px; /* 更小的标签字体 */
-    margin-bottom: 1px;
+    font-size: 9px; /* 最小标签字体 */
+    margin-bottom: 0px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 14px; /* 更小的数值字体 */
+    font-size: 12px; /* 最小数值字体 */
     line-height: 1.0;
   }
   

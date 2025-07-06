@@ -200,11 +200,11 @@ function formatDate(dateString) {
           <!-- Image display section -->
           <div class="image-display-section">
             <div class="image-container">
-                              <img 
+              <img 
                   :src="`${API_BASE_URL()}${currentImage.image_url}`" 
-                  :alt="currentImage.title" 
-                  class="main-image" 
-                />
+                :alt="currentImage.title" 
+                class="main-image" 
+              />
             </div>
           </div>
 

@@ -141,22 +141,28 @@ onMounted(() => {
               </div>
 
               <div class="gallery-info">
-                <h3 class="gallery-title">{{ gallery.title }}</h3>
-                <p class="gallery-author">by {{ gallery.author }}</p>
-                <div class="gallery-stats">
-                  <div class="bookmarks-count">
-                    <n-icon><BookmarkIcon /></n-icon>
-                    <strong>{{ gallery.bookmarksCount }}</strong>
-                    <span>收藏</span>
-                  </div>
-                  <div class="likes-info">
-                    <n-icon><LikeIcon /></n-icon>
-                    <span>{{ gallery.likesCount }}</span>
-                  </div>
+                <!-- 标题与作者一行布局 -->
+                <div class="title-author-row">
+                  <h3 class="gallery-title">{{ gallery.title }}</h3>
+                  <p class="gallery-author">by {{ gallery.author }}</p>
                 </div>
-                <n-tag :color="{ color: getRankColor(gallery.rank), textColor: 'white' }" size="small">
-                  收藏第{{ gallery.rank }}名
-                </n-tag>
+                <!-- 统计信息与排名一行布局 -->
+                <div class="stats-rank-row">
+                  <div class="gallery-stats">
+                    <div class="bookmarks-count">
+                      <n-icon><BookmarkIcon /></n-icon>
+                      <strong>{{ gallery.bookmarksCount }}</strong>
+                      <span>收藏</span>
+                    </div>
+                    <div class="likes-info">
+                      <n-icon><LikeIcon /></n-icon>
+                      <span>{{ gallery.likesCount }}</span>
+                    </div>
+                  </div>
+                  <n-tag :color="{ color: getRankColor(gallery.rank), textColor: 'white' }" size="small">
+                    收藏第{{ gallery.rank }}名
+                  </n-tag>
+                </div>
               </div>
             </div>
           </div>
@@ -252,7 +258,7 @@ onMounted(() => {
 }
 
 .favorites-stats {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .stats-card {
@@ -261,19 +267,18 @@ onMounted(() => {
 }
 
 .stats-card :deep(.n-card-header) {
-  padding: 12px 20px 8px 20px; /* 减少头部padding */
+  padding: 8px 20px 4px 20px; /* 进一步减少头部padding */
 }
 
 .stats-card :deep(.n-card__content) {
-  padding: 8px 20px 16px 20px; /* 减少内容padding */
+  padding: 4px 20px 12px 20px; /* 进一步减少内容padding */
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 固定2列布局 */
-  grid-template-rows: 1fr 1fr; /* 固定2行布局 */
-  gap: 12px 20px; /* 垂直间距12px，水平间距20px */
-  margin-top: 8px; /* 减少顶部间距 */
+  grid-template-columns: repeat(4, 1fr); /* 单行4列布局 */
+  gap: 16px; /* 统一间距 */
+  margin-top: 4px; /* 减少顶部间距 */
 }
 
 .stats-grid :deep(.n-statistic) {
@@ -281,15 +286,15 @@ onMounted(() => {
 }
 
 .stats-grid :deep(.n-statistic .n-statistic-label) {
-  font-size: 13px; /* 减小标签字体 */
+  font-size: 12px; /* 适中的标签字体 */
   color: #6b7280;
-  margin-bottom: 4px; /* 减少标签与数值间距 */
+  margin-bottom: 2px; /* 减少标签与数值间距 */
 }
 
 .stats-grid :deep(.n-statistic .n-statistic-value) {
-  font-size: 20px; /* 减小数值字体 */
+  font-size: 18px; /* 适中的数值字体 */
   font-weight: 600;
-  line-height: 1.2; /* 紧凑行高 */
+  line-height: 1.1; /* 紧凑行高 */
 }
 
 /* 前三名展示 */
@@ -300,7 +305,7 @@ onMounted(() => {
 
 .section-title {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .section-title h2 {
@@ -430,29 +435,50 @@ onMounted(() => {
   text-align: center;
 }
 
+/* 标题与作者一行布局 */
+.title-author-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
 .gallery-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+  text-align: left;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .gallery-author {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
-  margin: 0 0 16px 0;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* 统计信息与排名一行布局 */
+.stats-rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .gallery-stats {
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
 }
 
 .bookmarks-count {
@@ -503,13 +529,13 @@ onMounted(() => {
   }
   
   .favorites-stats {
-    margin-bottom: 20px; /* 进一步减少统计区下方间距 */
+    margin-bottom: 16px; /* 进一步减少统计区下方间距 */
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px; /* 进一步减少统计项间距 */
-    margin-top: 6px;
+    grid-template-columns: repeat(4, 1fr); /* 移动端也保持4列 */
+    gap: 8px; /* 减少间距 */
+    margin-top: 2px;
   }
   
   .stats-grid :deep(.n-statistic) {
@@ -517,13 +543,13 @@ onMounted(() => {
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 11px; /* 进一步减小标签字体 */
-    margin-bottom: 2px;
+    font-size: 10px; /* 移动端更小字体 */
+    margin-bottom: 1px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 16px; /* 进一步减小数值字体 */
-    line-height: 1.1;
+    font-size: 14px; /* 移动端更小数值 */
+    line-height: 1.0;
   }
 
   .top-three-grid {
@@ -540,7 +566,7 @@ onMounted(() => {
   }
   
   .section-title {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .stats-card :deep(.n-card-header) {
@@ -556,12 +582,24 @@ onMounted(() => {
   }
   
   .gallery-title {
-    font-size: 16px;
+    font-size: 14px;
   }
   
   .gallery-author {
-    font-size: 13px;
-    margin-bottom: 12px;
+    font-size: 11px;
+  }
+  
+  .title-author-row {
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+  
+  .stats-rank-row {
+    gap: 6px;
+  }
+  
+  .gallery-stats {
+    gap: 8px;
   }
 
   .gallery-stats {
@@ -598,22 +636,22 @@ onMounted(() => {
   }
   
   .favorites-stats {
-    margin-bottom: 12px; /* 更紧凑的统计区间距 */
+    margin-bottom: 10px; /* 更紧凑的统计区间距 */
   }
 
   .stats-grid {
-    grid-template-columns: 1fr; /* 超小屏幕单列显示 */
-    gap: 6px; /* 更紧凑的间距 */
-    margin-top: 4px;
+    grid-template-columns: repeat(4, 1fr); /* 超小屏也保持4列 */
+    gap: 4px; /* 最小间距 */
+    margin-top: 2px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 10px; /* 更小的标签字体 */
-    margin-bottom: 1px;
+    font-size: 9px; /* 最小标签字体 */
+    margin-bottom: 0px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 14px; /* 更小的数值字体 */
+    font-size: 12px; /* 最小数值字体 */
     line-height: 1.0;
   }
 
@@ -627,12 +665,24 @@ onMounted(() => {
   }
 
   .gallery-title {
-    font-size: 15px;
+    font-size: 13px;
   }
   
   .gallery-author {
-    font-size: 12px;
+    font-size: 10px;
+  }
+  
+  .title-author-row {
     margin-bottom: 8px;
+    gap: 4px;
+  }
+  
+  .stats-rank-row {
+    gap: 4px;
+  }
+  
+  .gallery-stats {
+    gap: 6px;
   }
   
   .gallery-stats {
@@ -654,7 +704,7 @@ onMounted(() => {
   }
   
   .section-title {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .top-three-section {

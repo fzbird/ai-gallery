@@ -299,7 +299,7 @@ onUnmounted(() => {
             class="logo-image"
           />
           <span v-else class="logo-text">{{ systemName }}</span>
-        </div>
+                </div>
       </router-link>
       
       <!-- 桌面端导航菜单 -->
@@ -552,8 +552,8 @@ onUnmounted(() => {
 /* 移动端汉堡菜单按钮 - 主要由CSS控制显示 */
 .mobile-menu-button {
   display: none;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   transition: all 0.2s ease;
   background: rgba(102, 126, 234, 0.1);
@@ -595,7 +595,7 @@ onUnmounted(() => {
 }
 
 .mobile-nav-content {
-  padding: 20px 24px;
+  padding: 12px 20px;
   max-height: 70vh;
   overflow-y: auto;
 }
@@ -605,10 +605,10 @@ onUnmounted(() => {
   color: #374151;
   text-decoration: none;
   font-weight: 500;
-  font-size: 18px;
-  padding: 16px 20px;
-  margin: 6px 0;
-  border-radius: 12px;
+  font-size: 16px;
+  padding: 10px 16px;
+  margin: 4px 0;
+  border-radius: 8px;
   transition: all 0.2s ease;
   border: 2px solid transparent;
   text-align: center;
@@ -686,6 +686,12 @@ onUnmounted(() => {
   .mobile-nav {
     display: block !important;
   }
+  
+  .mobile-nav-link {
+    padding: 9px 14px;
+    margin: 3px 0;
+    min-height: 38px;
+  }
 }
 
 /* 手机设备适配 - 使用多种查询确保兼容性 */
@@ -738,10 +744,11 @@ onUnmounted(() => {
   }
   
   .mobile-nav-link {
-    min-height: 48px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 8px 12px;
   }
 }
 
@@ -787,6 +794,17 @@ onUnmounted(() => {
   .mobile-nav {
     display: block !important;
   }
+  
+  .mobile-nav-link {
+    font-size: 15px;
+    padding: 7px 10px;
+    margin: 3px 0;
+    min-height: 32px;
+  }
+  
+  .mobile-nav-content {
+    padding: 10px 16px;
+  }
 }
 
 /* 针对触摸设备的额外保障 */
@@ -807,10 +825,11 @@ onUnmounted(() => {
   }
   
   .mobile-nav-link {
-    min-height: 48px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 8px 12px;
   }
 }
 

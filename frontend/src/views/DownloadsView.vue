@@ -168,36 +168,34 @@ onMounted(() => {
               </div>
 
               <div class="gallery-info">
-                <h3 class="gallery-title">{{ gallery.title }}</h3>
-                <p class="gallery-author">by {{ gallery.author }}</p>
-                
-                <!-- 下载统计 -->
-                <div class="download-stats">
-                  <div class="downloads-count">
-                    <n-icon><ArrowDownIcon /></n-icon>
-                    <strong>{{ gallery.downloadsCount }}</strong>
-                    <span>下载</span>
-                  </div>
-                  <div class="conversion-rate">
-                    转化率 {{ gallery.conversionRate }}%
-                  </div>
+                <!-- 标题与作者一行布局 -->
+                <div class="title-author-row">
+                  <h3 class="gallery-title">{{ gallery.title }}</h3>
+                  <p class="gallery-author">by {{ gallery.author }}</p>
                 </div>
-
-                <!-- 其他统计 -->
-                <div class="other-stats">
-                  <div class="stat-item">
-                    <n-icon><LikeIcon /></n-icon>
-                    <span>{{ gallery.likesCount }}</span>
+                <!-- 统计信息与排名一行布局 -->
+                <div class="stats-rank-row">
+                  <div class="gallery-stats">
+                    <div class="downloads-count">
+                      <n-icon><ArrowDownIcon /></n-icon>
+                      <strong>{{ gallery.downloadsCount }}</strong>
+                      <span>下载</span>
+                    </div>
+                    <div class="other-stats">
+                      <div class="stat-item">
+                        <n-icon><LikeIcon /></n-icon>
+                        <span>{{ gallery.likesCount }}</span>
+                      </div>
+                      <div class="stat-item">
+                        <n-icon><BookmarkIcon /></n-icon>
+                        <span>{{ gallery.bookmarksCount }}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="stat-item">
-                    <n-icon><BookmarkIcon /></n-icon>
-                    <span>{{ gallery.bookmarksCount }}</span>
-                  </div>
+                  <n-tag :color="{ color: getRankColor(gallery.rank), textColor: 'white' }" size="small">
+                    下载第{{ gallery.rank }}名
+                  </n-tag>
                 </div>
-
-                <n-tag :color="{ color: getRankColor(gallery.rank), textColor: 'white' }" size="small">
-                  下载第{{ gallery.rank }}名
-                </n-tag>
               </div>
             </div>
           </div>
@@ -294,7 +292,7 @@ onMounted(() => {
 }
 
 .downloads-stats {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .stats-card {
@@ -302,11 +300,35 @@ onMounted(() => {
   border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
+.stats-card :deep(.n-card-header) {
+  padding: 8px 20px 4px 20px; /* 减少头部padding，与收藏榜一致 */
+}
+
+.stats-card :deep(.n-card__content) {
+  padding: 4px 20px 12px 20px; /* 减少内容padding，与收藏榜一致 */
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 24px;
-  margin-top: 16px;
+  grid-template-columns: repeat(4, 1fr); /* 单行4列布局，与收藏榜一致 */
+  gap: 16px; /* 统一间距 */
+  margin-top: 4px; /* 减少顶部间距 */
+}
+
+.stats-grid :deep(.n-statistic) {
+  text-align: center;
+}
+
+.stats-grid :deep(.n-statistic .n-statistic-label) {
+  font-size: 12px; /* 适中的标签字体 */
+  color: #6b7280;
+  margin-bottom: 2px; /* 减少标签与数值间距 */
+}
+
+.stats-grid :deep(.n-statistic .n-statistic-value) {
+  font-size: 18px; /* 适中的数值字体 */
+  font-weight: 600;
+  line-height: 1.1; /* 紧凑行高 */
 }
 
 /* 前三名展示 */
@@ -317,7 +339,7 @@ onMounted(() => {
 
 .section-title {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .section-title h2 {
@@ -454,54 +476,64 @@ onMounted(() => {
   text-align: center;
 }
 
+/* 标题与作者一行布局 */
+.title-author-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
 .gallery-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+  text-align: left;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .gallery-author {
-  font-size: 14px;
+  font-size: 12px;
   color: #6b7280;
-  margin: 0 0 16px 0;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: right;
 }
 
-.download-stats {
+/* 统计信息与排名一行布局 */
+.stats-rank-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  background: #f8fafc;
-  border-radius: 8px;
+  gap: 8px;
+}
+
+.gallery-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .downloads-count {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   color: #10B981;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-}
-
-.conversion-rate {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 500;
 }
 
 .other-stats {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 8px;
 }
 
 .stat-item {
@@ -543,25 +575,22 @@ onMounted(() => {
   }
   
   .downloads-stats {
-    margin-bottom: 24px; /* 减少统计区下方间距 */
+    margin-bottom: 16px; /* 减少统计区下方间距 */
   }
 
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px; /* 减少统计项间距 */
-    margin-top: 12px;
-  }
-  
-  .stats-grid :deep(.n-statistic) {
-    text-align: center;
+    grid-template-columns: repeat(4, 1fr); /* 移动端保持4列 */
+    gap: 8px; /* 减少统计项间距 */
+    margin-top: 8px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 12px; /* 减小标签字体 */
+    font-size: 10px; /* 移动端标签字体 */
+    margin-bottom: 1px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 18px; /* 减小数值字体 */
+    font-size: 14px; /* 移动端数值字体 */
   }
 
   .top-three-grid {
@@ -578,15 +607,15 @@ onMounted(() => {
   }
   
   .section-title {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .stats-card :deep(.n-card-header) {
-    padding: 12px 16px; /* 减少卡片头部padding */
+    padding: 6px 16px 3px 16px; /* 移动端减少头部padding */
   }
   
   .stats-card :deep(.n-card__content) {
-    padding: 12px 16px; /* 减少卡片内容padding */
+    padding: 3px 16px 10px 16px; /* 移动端减少内容padding */
   }
   
   .gallery-cover {
@@ -594,31 +623,32 @@ onMounted(() => {
   }
   
   .gallery-title {
-    font-size: 16px;
-  }
-  
-  .gallery-author {
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-
-  .download-stats {
-    flex-direction: row; /* 保持水平排列 */
-    justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-  }
-  
-  .downloads-count {
     font-size: 14px;
   }
   
-  .conversion-rate {
+  .gallery-author {
     font-size: 11px;
+  }
+  
+  .title-author-row {
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+  
+  .stats-rank-row {
+    gap: 6px;
+  }
+  
+  .gallery-stats {
+    gap: 8px;
+  }
+
+  .downloads-count {
+    font-size: 12px;
   }
 
   .other-stats {
-    gap: 12px;
+    gap: 6px;
   }
   
   .stat-item {
@@ -644,20 +674,21 @@ onMounted(() => {
   }
   
   .downloads-stats {
-    margin-bottom: 16px;
+    margin-bottom: 10px;
   }
 
   .stats-grid {
-    grid-template-columns: 1fr; /* 超小屏幕单列显示 */
-    gap: 8px;
+    grid-template-columns: repeat(4, 1fr); /* 超小屏幕也保持4列 */
+    gap: 4px; /* 更紧凑的间距 */
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-label) {
-    font-size: 11px;
+    font-size: 9px; /* 超小屏幕标签字体 */
+    margin-bottom: 1px;
   }
   
   .stats-grid :deep(.n-statistic .n-statistic-value) {
-    font-size: 16px;
+    font-size: 12px; /* 超小屏幕数值字体 */
   }
 
   .top-gallery-card {
@@ -670,12 +701,24 @@ onMounted(() => {
   }
 
   .gallery-title {
-    font-size: 15px;
+    font-size: 13px;
   }
   
   .gallery-author {
-    font-size: 12px;
+    font-size: 10px;
+  }
+  
+  .title-author-row {
     margin-bottom: 8px;
+    gap: 4px;
+  }
+  
+  .stats-rank-row {
+    gap: 4px;
+  }
+  
+  .gallery-stats {
+    gap: 6px;
   }
 
   .rank-badge {
@@ -687,23 +730,12 @@ onMounted(() => {
     right: 12px; /* 调整热度标签位置 */
   }
   
-  .download-stats {
-    flex-direction: column; /* 超小屏幕垂直排列 */
-    align-items: center;
-    gap: 4px;
-    padding: 6px 8px;
-  }
-  
   .downloads-count {
-    font-size: 13px;
-  }
-  
-  .conversion-rate {
-    font-size: 10px;
+    font-size: 11px;
   }
   
   .other-stats {
-    gap: 8px;
+    gap: 4px;
   }
   
   .stat-item {
@@ -715,7 +747,7 @@ onMounted(() => {
   }
   
   .section-title {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   
   .top-three-section {
@@ -723,11 +755,11 @@ onMounted(() => {
   }
   
   .stats-card :deep(.n-card-header) {
-    padding: 10px 12px;
+    padding: 6px 12px 2px 12px; /* 超小屏幕进一步减少padding */
   }
   
   .stats-card :deep(.n-card__content) {
-    padding: 10px 12px;
+    padding: 2px 12px 8px 12px; /* 超小屏幕进一步减少padding */
   }
 }
 

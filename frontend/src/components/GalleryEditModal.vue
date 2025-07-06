@@ -633,7 +633,7 @@ async function uploadNewImages() {
     try {
       // 计算文件哈希
       try {
-        fileItem.hash = await calculateFileHash(fileItem.file);
+      fileItem.hash = await calculateFileHash(fileItem.file);
       } catch (hashError) {
         console.error(`计算文件哈希失败 ${fileItem.name}:`, hashError);
         // 如果哈希计算失败，使用备用方案
