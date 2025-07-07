@@ -10,4 +10,6 @@ python-jose[cryptography]
 uvicorn[standard]
 pillow
 python-multipart
-httpx 
+httpx
+requests
+aiohttp 

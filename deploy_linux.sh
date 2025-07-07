@@ -432,12 +432,23 @@ EOF
     
     # 等待后端服务就绪
     echo "🔍 等待后端服务就绪..."
-    for i in {1..30}; do
+    for i in {1..60}; do
         if curl -s "http://localhost:8000/docs" > /dev/null 2>&1; then
             echo "✅ 后端服务已就绪"
             break
         fi
-        echo "⏳ 等待后端服务启动... ($i/30)"
+        echo "⏳ 等待后端服务启动（包括数据库初始化）... ($i/60)"
+        sleep 5
+    done
+    
+    # 检查数据库初始化状态
+    echo "🔍 检查数据库初始化状态..."
+    for i in {1..20}; do
+        if curl -s "http://localhost:8000/api/v1/users/?skip=0&limit=1" > /dev/null 2>&1; then
+            echo "✅ 数据库初始化完成"
+            break
+        fi
+        echo "⏳ 等待数据库初始化完成... ($i/20)"
         sleep 3
     done
     
