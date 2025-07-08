@@ -23,7 +23,7 @@ class Settings(BaseSettings):
                 "http://localhost:3300",
                 "http://127.0.0.1:3300"
             ]
-    DATABASE_URL: str = "mysql+pymysql://root:fzbird20250615@192.168.5.117:3306/gallerydb?charset=utf8mb4"
+    DATABASE_URL: str = "mysql+pymysql:/user:password@ip:3306/gallerydb?charset=utf8mb4"
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         return self.DATABASE_URL

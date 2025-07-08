@@ -34,8 +34,8 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_galleries_title'), 'galleries', ['title'], unique=False)
-    op.drop_table('gallery')
     op.drop_constraint(op.f('image_ibfk_1'), 'image', type_='foreignkey')
+    op.drop_table('gallery')
     op.create_foreign_key(None, 'image', 'galleries', ['gallery_id'], ['id'])
     # ### end Alembic commands ###
 

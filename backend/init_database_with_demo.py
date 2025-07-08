@@ -11,8 +11,7 @@ import random
 import hashlib
 import time
 import uuid
-import asyncio
-import aiohttp
+
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -520,43 +519,48 @@ class DatabaseInitializer:
                         file_hash=file_hash
                     )
                     
-                    image = crud.image.create_with_owner(
+                    # 准备标签数据
+                    selected_tags = []
+                    if theme_data['tags']:
+                        selected_tags = random.sample(
+                            theme_data['tags'], 
+                            min(random.randint(2, 4), len(theme_data['tags']))
+                        )
+                    
+                    # 准备主题ID
+                    topic_id = None
+                    if theme_data['topics']:
+                        topic_name = random.choice(theme_data['topics'])
+                        topic = self.db.query(Topic).filter(Topic.name == topic_name).first()
+                        if topic:
+                            topic_id = topic.id
+                    
+                    # 更新图片创建对象以包含主题
+                    image_create = schemas.ImageCreate(
+                        title=title,
+                        description=description,
+                        file_hash=file_hash,
+                        topic_id=topic_id
+                    )
+                    
+                    # 使用正确的创建方法
+                    image = crud.image.create(
                         db=self.db,
                         obj_in=image_create,
-                        owner_id=user.id
+                        owner_id=user.id,
+                        filename=filename,
+                        filepath=str(filepath),
+                        tags=selected_tags,
+                        category_id=category.id if category else None
                     )
                     
                     # 更新图片详细信息
-                    image.filename = filename
-                    image.filepath = str(filepath)
                     image.file_size = file_size
                     image.file_type = "image/jpeg"
                     image.width = width
                     image.height = height
                     image.ai_status = "completed"
                     image.ai_description = f"这是一幅{category_name}作品，具有很高的艺术价值。"
-                    
-                    # 设置分类
-                    if category:
-                        image.category_id = category.id
-                    
-                    # 设置主题
-                    if theme_data['topics']:
-                        topic_name = random.choice(theme_data['topics'])
-                        topic = self.db.query(Topic).filter(Topic.name == topic_name).first()
-                        if topic:
-                            image.topic_id = topic.id
-                    
-                    # 添加标签
-                    if theme_data['tags']:
-                        selected_tags = random.sample(
-                            theme_data['tags'], 
-                            min(random.randint(2, 4), len(theme_data['tags']))
-                        )
-                        for tag_name in selected_tags:
-                            tag = self.db.query(Tag).filter(Tag.name == tag_name).first()
-                            if tag:
-                                image.tags.append(tag)
                     
                     # 随机添加一些交互数据
                     image.views_count = random.randint(10, 500)
@@ -679,22 +683,30 @@ class DatabaseInitializer:
         bookmark_count = 0
         
         for user in users:
+            # 获取可以点赞的内容（不包括自己的）
+            available_images = [img for img in images if img.owner_id != user.id]
+            available_galleries = [gal for gal in galleries if gal.owner_id != user.id]
+            
             # 随机点赞一些图片
-            liked_images = random.sample(images, min(random.randint(5, 20), len(images)))
-            for image in liked_images:
-                if user.id != image.owner_id:  # 不能点赞自己的作品
-                    user.liked_contents.append(image)
-                    like_count += 1
+            if available_images:
+                liked_count = min(random.randint(3, 15), len(available_images))
+                liked_images = random.sample(available_images, liked_count)
+                for image in liked_images:
+                    # 检查是否已经点赞过，避免重复
+                    if image not in user.liked_contents:
+                        user.liked_contents.append(image)
+                        like_count += 1
             
             # 随机收藏一些图片和图集
-            bookmarked_items = random.sample(
-                images + galleries, 
-                min(random.randint(2, 10), len(images + galleries))
-            )
-            for item in bookmarked_items:
-                if user.id != item.owner_id:  # 不能收藏自己的作品
-                    user.bookmarked_contents.append(item)
-                    bookmark_count += 1
+            available_contents = available_images + available_galleries
+            if available_contents:
+                bookmark_count_per_user = min(random.randint(1, 8), len(available_contents))
+                bookmarked_items = random.sample(available_contents, bookmark_count_per_user)
+                for item in bookmarked_items:
+                    # 检查是否已经收藏过，避免重复
+                    if item not in user.bookmarked_contents:
+                        user.bookmarked_contents.append(item)
+                        bookmark_count += 1
         
         self.db.commit()
         print(f"  ✅ 创建了 {like_count} 个点赞和 {bookmark_count} 个收藏")
@@ -703,11 +715,17 @@ class DatabaseInitializer:
         """更新统计数据"""
         print("\n📊 更新统计数据...")
         
-        # 更新内容的统计计数
-        contents = self.db.query(ContentBase).all()
-        for content in contents:
-            content.likes_count = len(content.liked_by_users)
-            content.bookmarks_count = len(content.bookmarked_by_users)
+        # 更新图片统计计数
+        images = self.db.query(Image).filter(Image.id.isnot(None)).all()
+        for image in images:
+            image.likes_count = len(image.liked_by_users)
+            image.bookmarks_count = len(image.bookmarked_by_users)
+        
+        # 更新图集统计计数
+        galleries = self.db.query(Gallery).filter(Gallery.id.isnot(None)).all()
+        for gallery in galleries:
+            gallery.likes_count = len(gallery.liked_by_users)
+            gallery.bookmarks_count = len(gallery.bookmarked_by_users)
         
         self.db.commit()
         print("  ✅ 统计数据更新完成")
