@@ -219,6 +219,15 @@ def create_user(
             detail="Registration is currently disabled by the administrator.",
         )
     
+    # 验证部门ID（如果提供）
+    if user_in.department_id is not None:
+        department = crud.department.get(db, id=user_in.department_id)
+        if not department:
+            raise HTTPException(
+                status_code=400,
+                detail="The specified department does not exist.",
+            )
+    
     user = crud.user.get_by_email(db, email=user_in.email)
     if user:
         raise HTTPException(

@@ -3,11 +3,13 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useSettingsStore } from '@/stores/settings';
-import { NCard, NForm, NFormItem, NInput, NButton, useMessage, NIcon, NSpace, NAlert } from 'naive-ui';
+import { useDepartmentStore } from '@/stores/department';
+import { NCard, NForm, NFormItem, NInput, NButton, useMessage, NIcon, NSpace, NAlert, NSelect } from 'naive-ui';
 import { PersonAddOutline as RegisterIcon, WarningOutline } from '@vicons/ionicons5';
 
 const authStore = useAuthStore();
 const settingsStore = useSettingsStore();
+const departmentStore = useDepartmentStore();
 const message = useMessage();
 const router = useRouter();
 
@@ -15,13 +17,30 @@ const formRef = ref(null);
 const model = reactive({
   username: '',
   email: '',
-  password: ''
+  password: '',
+  department_id: null
 });
 
 // 检查是否开放注册
 const isRegistrationEnabled = computed(() => {
   const settings = settingsStore.settings;
   return !settings || settings.enable_registration === undefined || settings.enable_registration === 'true' || settings.enable_registration === true;
+});
+
+// 部门选择选项
+const departmentOptions = computed(() => {
+  const options = [
+    { label: '不选择部门', value: null }
+  ];
+  
+  departmentStore.departments.forEach(dept => {
+    options.push({
+      label: dept.name,
+      value: dept.id
+    });
+  });
+  
+  return options;
 });
 
 const rules = {
@@ -68,10 +87,17 @@ const handleRegister = (e) => {
   });
 };
 
-// 页面加载时获取系统设置
+// 页面加载时获取系统设置和部门列表
 onMounted(async () => {
   if (!settingsStore.settings) {
     await settingsStore.fetchSettings();
+  }
+  
+  // 获取部门列表供注册时选择
+  try {
+    await departmentStore.fetchDepartments(1, 100); // 获取所有部门
+  } catch (error) {
+    console.error('Failed to load departments:', error);
   }
 });
 </script>
@@ -124,6 +150,16 @@ onMounted(async () => {
             type="password"
             placeholder="请输入密码"
             show-password-on="mousedown"
+            size="large"
+            :disabled="!isRegistrationEnabled"
+          />
+        </n-form-item>
+        <n-form-item path="department_id" label="所属部门">
+          <n-select
+            v-model:value="model.department_id"
+            :options="departmentOptions"
+            placeholder="请选择所属部门（可选）"
+            clearable
             size="large"
             :disabled="!isRegistrationEnabled"
           />
