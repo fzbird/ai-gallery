@@ -61,11 +61,15 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdateAdmin]):
         return super().update(db, db_obj=db_obj, obj_in=update_data)
 
     def update_password(self, db: Session, *, db_obj: User, new_password: str) -> User:
-        db_obj.hashed_password = get_password_hash(new_password)
-        db.add(db_obj)
+        # 重新从当前会话查询用户对象，避免会话冲突
+        user = db.query(User).filter(User.id == db_obj.id).first()
+        if not user:
+            raise ValueError("User not found")
+        
+        user.hashed_password = get_password_hash(new_password)
         db.commit()
-        db.refresh(db_obj)
-        return db_obj
+        db.refresh(user)
+        return user
 
     def get_total_count(self, db: Session) -> int:
         return db.query(self.model).count()
