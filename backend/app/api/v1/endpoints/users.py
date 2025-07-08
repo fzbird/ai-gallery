@@ -18,19 +18,35 @@ def get_users_count(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(dependencies.get_current_active_superuser),
     search: str = "",
+    status: str = "",
+    role: str = "",
 ):
     """
-    Get total count of users.
+    Get total count of users with filtering.
     Admin only.
     """
     query = db.query(models.User)
     
+    # 搜索条件（和read_users_admin保持一致）
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
             models.User.username.ilike(search_pattern) |
+            models.User.email.ilike(search_pattern) |
             models.User.bio.ilike(search_pattern)
         )
+    
+    # 状态筛选（和read_users_admin保持一致）
+    if status == "active":
+        query = query.filter(models.User.is_active == True)
+    elif status == "inactive":
+        query = query.filter(models.User.is_active == False)
+    
+    # 角色筛选（和read_users_admin保持一致）
+    if role == "admin":
+        query = query.filter(models.User.is_superuser == True)
+    elif role == "user":
+        query = query.filter(models.User.is_superuser == False)
     
     total = query.count()
     return {"total": total}
@@ -228,7 +244,9 @@ def read_users_admin(
         query = query.filter(models.User.is_superuser == False)
     
     # 排序
-    if sort == "username":
+    if sort == "id":
+        order_by_field = models.User.id
+    elif sort == "username":
         order_by_field = models.User.username
     elif sort == "created_at":
         order_by_field = models.User.created_at

@@ -155,9 +155,26 @@ def read_galleries(
     # 状态筛选（Gallery没有is_published字段，暂时跳过）
     # TODO: 如果需要状态筛选，需要在Gallery模型中添加相应字段
     
-    # 简化排序逻辑
-    if sort == "created_at":
-        if order.lower() == "desc":
+    # 排序逻辑
+    order_desc = order.lower() == "desc"
+    
+    if sort == "views_count":
+        if order_desc:
+            query = query.order_by(models.Gallery.views_count.desc())
+        else:
+            query = query.order_by(models.Gallery.views_count.asc())
+    elif sort == "likes_count":
+        if order_desc:
+            query = query.order_by(models.Gallery.likes_count.desc())
+        else:
+            query = query.order_by(models.Gallery.likes_count.asc())
+    elif sort == "bookmarks_count":
+        if order_desc:
+            query = query.order_by(models.Gallery.bookmarks_count.desc())
+        else:
+            query = query.order_by(models.Gallery.bookmarks_count.asc())
+    elif sort == "created_at":
+        if order_desc:
             query = query.order_by(models.Gallery.created_at.desc())
         else:
             query = query.order_by(models.Gallery.created_at.asc())

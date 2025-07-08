@@ -111,6 +111,7 @@
         :bordered="false"
         size="small"
         class="admin-table"
+        @update:sorter="handleTableSort"
       />
       <admin-pagination
         :page="userPagination.page"
@@ -232,6 +233,7 @@ const searchQuery = ref('');
 const statusFilter = ref(null);
 const roleFilter = ref(null);
 const sortBy = ref('created_at');
+const sortOrder = ref('desc');
 const isUpdating = ref(false);
 
 // 弹窗状态
@@ -282,6 +284,7 @@ const columns = [
     title: '用户名',
     key: 'username',
     width: 120,
+    sorter: 'default',
     render(row) {
       return h(
         'div',
@@ -329,6 +332,7 @@ const columns = [
     title: '注册时间',
     key: 'created_at',
     width: 140,
+    sorter: 'default',
     render(row) {
       return row.created_at ? format(new Date(row.created_at), 'yyyy-MM-dd HH:mm') : '未知';
     }
@@ -533,7 +537,7 @@ function fetchUsersWithFilters(page = userPagination.value.page) {
     status: statusFilter.value,
     role: roleFilter.value,
     sort: sortBy.value,
-    order: 'desc'
+    order: sortOrder.value
   };
   
   adminStore.fetchUsers(page, userPagination.value.pageSize, filters);
@@ -545,6 +549,22 @@ function handleFilter() {
 
 function handleSort() {
   fetchUsersWithFilters(userPagination.value.page);
+}
+
+function handleTableSort(sorters) {
+  if (sorters && sorters.length > 0) {
+    const sorter = sorters[0];
+    if (sorter.columnKey) {
+      sortBy.value = sorter.columnKey;
+      sortOrder.value = sorter.order === 'ascend' ? 'asc' : 'desc';
+      fetchUsersWithFilters(1); // 排序时回到第一页
+    }
+  } else {
+    // 清除排序
+    sortBy.value = 'created_at';
+    sortOrder.value = 'desc';
+    fetchUsersWithFilters(1);
+  }
 }
 
 function handleRefresh() {
@@ -570,6 +590,7 @@ function handlePageChange(page) {
 }
 
 function handlePageSizeChange(pageSize) {
+  userPagination.value.pageSize = pageSize;
   fetchUsersWithFilters(1);
 }
 

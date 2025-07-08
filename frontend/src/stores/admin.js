@@ -69,7 +69,13 @@ export const useAdminStore = defineStore('admin', () => {
       // 并行请求用户数据和总数
       const [usersResponse, countResponse] = await Promise.all([
         apiClient.get('/users/admin', { params }),
-        apiClient.get('/users/count', { params: { search: params.search } })
+        apiClient.get('/users/count', { 
+          params: { 
+            search: params.search,
+            status: params.status,
+            role: params.role
+          } 
+        })
       ]);
       
       users.value = usersResponse.data;

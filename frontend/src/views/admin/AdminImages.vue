@@ -358,7 +358,7 @@ const debouncedSearch = debounce(() => {
 function fetchGalleriesWithFilters(page = galleryPagination.value.page) {
   const filters = {};
   
-  if (searchQuery.value.trim()) {
+  if (searchQuery.value && searchQuery.value.trim()) {
     filters.search = searchQuery.value.trim();
   }
   
@@ -366,7 +366,8 @@ function fetchGalleriesWithFilters(page = galleryPagination.value.page) {
     filters.category_id = categoryFilter.value;
   }
   
-  if (sortBy.value) {
+  // 添加排序参数
+  if (sortBy.value && sortBy.value !== '') {
     filters.sort = sortBy.value;
     filters.order = 'desc';
   }
@@ -402,6 +403,11 @@ watch(searchQuery, () => {
 // 监听筛选条件变化
 watch([categoryFilter], () => {
   fetchGalleriesWithFilters(1);
+});
+
+// 监听排序条件变化
+watch(sortBy, () => {
+  fetchGalleriesWithFilters(galleryPagination.value.page);
 });
 
 function handleEdit(gallery) {
