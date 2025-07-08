@@ -417,6 +417,47 @@ def read_user_by_username(
             detail=f"Internal server error: {str(e)}"
         )
 
+@router.get("/{user_id}/deletion-check")
+def check_user_deletion_eligibility(
+    *,
+    db: Session = Depends(get_db),
+    user_id: int,
+    current_user: models.User = Depends(dependencies.get_current_active_superuser),
+):
+    """
+    Check if a user can be safely deleted.
+    Returns detailed information about deletion impact.
+    """
+    user = crud.user.get(db, id=user_id, options=[selectinload(models.User.department)])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Superusers cannot delete themselves")
+    
+    # 统计用户的图集数量
+    galleries_count = db.query(models.Gallery).filter(models.Gallery.owner_id == user_id).count()
+    
+    # 统计用户的图片数量
+    images_count = db.query(models.Image).filter(models.Image.owner_id == user_id).count()
+    
+    # 获取具体的图集信息（前5个，用于显示）
+    sample_galleries = db.query(models.Gallery).filter(
+        models.Gallery.owner_id == user_id
+    ).limit(5).all()
+    
+    gallery_titles = [gallery.title for gallery in sample_galleries]
+    
+    return {
+        "user_id": user_id,
+        "username": user.username,
+        "galleries_count": galleries_count,
+        "images_count": images_count,
+        "sample_gallery_titles": gallery_titles,
+        "has_content": galleries_count > 0 or images_count > 0,
+        "warning_message": f"删除用户 '{user.username}' 将同时删除其 {galleries_count} 个图集和 {images_count} 张图片。此操作不可逆！" if galleries_count > 0 or images_count > 0 else ""
+    }
+
 @router.delete("/{user_id}", response_model=schemas.User)
 def delete_user(
     *,
@@ -425,7 +466,7 @@ def delete_user(
     current_user: models.User = Depends(dependencies.get_current_active_superuser),
 ):
     """
-    Delete a user.
+    Delete a user and all their associated content (galleries and images).
     """
     user = crud.user.get(db, id=user_id, options=[selectinload(models.User.department)])
     if not user:
@@ -433,8 +474,28 @@ def delete_user(
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Superusers cannot delete themselves")
     
-    crud.user.remove(db=db, id=user_id)
-    return user
+    try:
+        # 先删除用户的所有图集（这会级联删除图集中的图片关联）
+        user_galleries = db.query(models.Gallery).filter(models.Gallery.owner_id == user_id).all()
+        for gallery in user_galleries:
+            crud.gallery.remove(db=db, id=gallery.id)
+        
+        # 删除用户的所有独立图片
+        user_images = db.query(models.Image).filter(models.Image.owner_id == user_id).all()
+        for image in user_images:
+            crud.image.remove(db=db, id=image.id)
+        
+        # 最后删除用户
+        crud.user.remove(db=db, id=user_id)
+        
+        return user
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error deleting user and associated content: {str(e)}"
+        )
 
 @router.get("/me/test")
 def test_endpoint():

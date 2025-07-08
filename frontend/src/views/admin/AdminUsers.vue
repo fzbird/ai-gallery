@@ -436,22 +436,68 @@ async function handleUpdateUser() {
   }
 }
 
-function handleDelete(user) {
-  dialog.warning({
-    title: '确认删除',
-    content: `你确定要删除用户 "${user.username}" 吗？此操作不可逆。`,
-    positiveText: '确定',
-    negativeText: '取消',
-    onPositiveClick: async () => {
-      try {
-        await adminStore.deleteUser(user.id);
-        message.success('用户删除成功');
-        await adminStore.fetchUserStats();
-      } catch (error) {
-        message.error('删除失败：' + (error.message || '未知错误'));
-      }
-    },
-  });
+async function handleDelete(user) {
+  try {
+    // 检查用户是否有图集和图片
+    const deletionCheck = await adminStore.checkUserDeletionEligibility(user.id);
+    
+    let dialogContent = '';
+    let dialogTitle = '确认删除';
+    
+    if (deletionCheck.has_content) {
+      // 用户有图集或图片，显示详细信息
+      dialogTitle = '警告：删除用户将同时删除其内容';
+      dialogContent = `
+        <div style="margin-bottom: 16px;">
+          <p><strong>用户：</strong>${user.username}</p>
+          <p><strong>图集数量：</strong>${deletionCheck.galleries_count} 个</p>
+          <p><strong>图片数量：</strong>${deletionCheck.images_count} 张</p>
+        </div>
+        ${deletionCheck.sample_gallery_titles.length > 0 ? 
+          `<div style="margin-bottom: 16px;">
+            <p><strong>示例图集：</strong></p>
+            <ul style="margin: 8px 0; padding-left: 20px;">
+              ${deletionCheck.sample_gallery_titles.map(title => `<li>${title}</li>`).join('')}
+              ${deletionCheck.galleries_count > 5 ? '<li>...还有更多</li>' : ''}
+            </ul>
+          </div>` : ''
+        }
+        <div style="color: #d32f2f; font-weight: 500; margin-bottom: 16px;">
+          ${deletionCheck.warning_message}
+        </div>
+        <p>你确定要继续吗？</p>
+      `;
+    } else {
+      // 用户没有内容，显示简单确认
+      dialogContent = `你确定要删除用户 "${user.username}" 吗？此操作不可逆。`;
+    }
+    
+    dialog.warning({
+      title: dialogTitle,
+      content: () => h('div', { innerHTML: dialogContent }),
+      positiveText: '确定删除',
+      negativeText: '取消',
+      positiveButtonProps: {
+        type: 'error'
+      },
+      onPositiveClick: async () => {
+        try {
+          await adminStore.deleteUser(user.id);
+          if (deletionCheck.has_content) {
+            message.success(`用户 "${user.username}" 及其 ${deletionCheck.galleries_count} 个图集、${deletionCheck.images_count} 张图片已删除`);
+          } else {
+            message.success('用户删除成功');
+          }
+          await adminStore.fetchUserStats();
+        } catch (error) {
+          message.error('删除失败：' + (error.message || '未知错误'));
+        }
+      },
+    });
+    
+  } catch (error) {
+    message.error('检查用户信息失败：' + (error.message || '未知错误'));
+  }
 }
 
 function handleResetPassword(user) {

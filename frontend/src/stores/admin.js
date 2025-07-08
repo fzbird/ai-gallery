@@ -309,6 +309,16 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  async function checkUserDeletionEligibility(userId) {
+    try {
+      const response = await apiClient.get(`/users/${userId}/deletion-check`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking user deletion eligibility:', error);
+      throw error;
+    }
+  }
+
   async function deleteUser(userId) {
     try {
       await apiClient.delete(`/users/${userId}`);
@@ -438,6 +448,7 @@ export const useAdminStore = defineStore('admin', () => {
     fetchGalleryStats,
     fetchTopicStats,
     
+    checkUserDeletionEligibility,
     deleteUser,
     deleteImage,
     deleteCategory,
