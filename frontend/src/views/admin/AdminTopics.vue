@@ -57,18 +57,11 @@
           placeholder="搜索专题名称..."
           clearable
           style="width: 300px"
-          @keyup.enter="handleSearch"
         >
           <template #prefix>
             <n-icon><SearchOutline /></n-icon>
           </template>
         </n-input>
-        <n-button @click="handleSearch" type="primary" ghost>
-          <template #icon>
-            <n-icon><SearchOutline /></n-icon>
-          </template>
-          搜索
-        </n-button>
       </div>
       
       <div class="toolbar-right">
@@ -317,7 +310,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h, computed } from 'vue';
+import { ref, onMounted, h, computed, watch } from 'vue';
+
+// 简单的防抖函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 import { useTopicStore } from '@/stores/topic';
 import { useAdminStore } from '@/stores/admin';
 import { useAuthStore } from '@/stores/auth';
@@ -490,26 +492,42 @@ const columns = [
   }
 ];
 
-// 事件处理函数
-function handleSearch() {
-  adminStore.fetchTopics(
-    pagination.value.page,
-    pagination.value.pageSize,
-    searchValue.value
-  );
+// 创建防抖搜索函数
+const debouncedSearch = debounce(() => {
+  fetchTopicsWithFilters(1);
+}, 300);
+
+// 获取专题列表（带筛选参数）
+function fetchTopicsWithFilters(page = topicPagination.value.page) {
+  if (searchQuery.value.trim()) {
+    // 如果有搜索条件，使用adminStore的搜索功能
+    adminStore.fetchTopics(
+      page,
+      topicPagination.value.pageSize,
+      searchQuery.value.trim()
+    );
+  } else {
+    // 否则使用topicStore的常规获取
+    topicStore.fetchAdminTopics(page, topicPagination.value.pageSize);
+  }
 }
 
 function handleRefresh() {
-  topicStore.fetchAdminTopics();
+  fetchTopicsWithFilters(topicPagination.value.page);
 }
 
 function handlePageChange(page) {
-  topicStore.fetchAdminTopics(page, topicPagination.value.pageSize);
+  fetchTopicsWithFilters(page);
 }
 
 function handlePageSizeChange(pageSize) {
-  topicStore.fetchAdminTopics(1, pageSize);
+  fetchTopicsWithFilters(1);
 }
+
+// 监听搜索输入变化
+watch(searchQuery, () => {
+  debouncedSearch();
+});
 
 async function handleCreate() {
   try {

@@ -16,18 +16,11 @@
           placeholder="搜索部门名称..."
           clearable
           style="width: 300px"
-          @keyup.enter="handleSearch"
         >
           <template #prefix>
             <n-icon><SearchOutline /></n-icon>
           </template>
         </n-input>
-        <n-button @click="handleSearch" type="primary" ghost>
-          <template #icon>
-            <n-icon><SearchOutline /></n-icon>
-          </template>
-          搜索
-        </n-button>
       </div>
       
       <div class="toolbar-right">
@@ -117,7 +110,16 @@
 </template>
 
 <script setup>
-import { h, onMounted, ref, computed } from 'vue';
+import { h, onMounted, ref, computed, watch } from 'vue';
+
+// 简单的防抖函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 import { useDepartmentStore } from '@/stores/department';
 import { useAdminStore } from '@/stores/admin';
 import { storeToRefs } from 'pinia';
@@ -321,27 +323,42 @@ function handleDelete(department) {
   });
 }
 
-function handleSearch() {
-  // 搜索功能
-  departmentStore.fetchDepartments(1, departmentPagination.value.pageSize);
+// 创建防抖搜索函数
+const debouncedSearch = debounce(() => {
+  fetchDepartmentsWithFilters(1);
+}, 300);
+
+// 获取部门列表（带筛选参数）
+function fetchDepartmentsWithFilters(page = departmentPagination.value.page) {
+  const filters = {
+    search: searchQuery.value.trim(),
+    sort: sortBy.value,
+    order: 'asc'
+  };
+  
+  departmentStore.fetchDepartments(page, departmentPagination.value.pageSize, filters);
 }
 
 function handleSort() {
-  // 排序功能
-  departmentStore.fetchDepartments(departmentPagination.value.page, departmentPagination.value.pageSize);
+  fetchDepartmentsWithFilters(departmentPagination.value.page);
 }
 
 function handleRefresh() {
-  departmentStore.fetchDepartments(departmentPagination.value.page, departmentPagination.value.pageSize);
+  fetchDepartmentsWithFilters(departmentPagination.value.page);
 }
+
+// 监听搜索输入变化
+watch(searchQuery, () => {
+  debouncedSearch();
+});
 
 // 分页事件处理
 function handlePageChange(page) {
-  departmentStore.fetchDepartments(page, departmentPagination.value.pageSize);
+  fetchDepartmentsWithFilters(page);
 }
 
 function handlePageSizeChange(pageSize) {
-  departmentStore.fetchDepartments(1, pageSize);
+  fetchDepartmentsWithFilters(1);
 }
 
 // 生命周期

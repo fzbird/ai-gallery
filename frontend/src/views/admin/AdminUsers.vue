@@ -57,18 +57,11 @@
           placeholder="搜索用户名或邮箱..."
           clearable
           style="width: 300px"
-          @keyup.enter="handleSearch"
         >
           <template #prefix>
             <n-icon><SearchOutline /></n-icon>
           </template>
         </n-input>
-        <n-button @click="handleSearch" type="primary" ghost>
-          <template #icon>
-            <n-icon><SearchOutline /></n-icon>
-          </template>
-          搜索
-        </n-button>
       </div>
       
       <div class="toolbar-right">
@@ -198,7 +191,16 @@
 </template>
 
 <script setup>
-import { h, onMounted, ref, computed } from 'vue';
+import { h, onMounted, ref, computed, watch } from 'vue';
+
+// 简单的防抖函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 import { useAdminStore } from '@/stores/admin';
 import { useDepartmentStore } from '@/stores/department';
 import { storeToRefs } from 'pinia';
@@ -473,32 +475,56 @@ function handleResetPassword(user) {
   });
 }
 
-function handleSearch() {
-  adminStore.fetchUsers(1, userPagination.value.pageSize);
+// 创建防抖搜索函数
+const debouncedSearch = debounce(() => {
+  fetchUsersWithFilters(1);
+}, 300);
+
+// 获取用户列表（带筛选参数）
+function fetchUsersWithFilters(page = userPagination.value.page) {
+  const filters = {
+    search: searchQuery.value.trim(),
+    status: statusFilter.value,
+    role: roleFilter.value,
+    sort: sortBy.value,
+    order: 'desc'
+  };
+  
+  adminStore.fetchUsers(page, userPagination.value.pageSize, filters);
 }
 
 function handleFilter() {
-  adminStore.fetchUsers(1, userPagination.value.pageSize);
+  fetchUsersWithFilters(1);
 }
 
 function handleSort() {
-  adminStore.fetchUsers(userPagination.value.page, userPagination.value.pageSize);
+  fetchUsersWithFilters(userPagination.value.page);
 }
 
 function handleRefresh() {
   Promise.all([
-    adminStore.fetchUsers(userPagination.value.page, userPagination.value.pageSize),
+    fetchUsersWithFilters(userPagination.value.page),
     adminStore.fetchUserStats()
   ]);
 }
 
+// 监听搜索输入变化
+watch(searchQuery, () => {
+  debouncedSearch();
+});
+
+// 监听筛选条件变化
+watch([statusFilter, roleFilter], () => {
+  fetchUsersWithFilters(1);
+});
+
 // 分页事件处理
 function handlePageChange(page) {
-  adminStore.fetchUsers(page, userPagination.value.pageSize);
+  fetchUsersWithFilters(page);
 }
 
 function handlePageSizeChange(pageSize) {
-  adminStore.fetchUsers(1, pageSize);
+  fetchUsersWithFilters(1);
 }
 
 // 生命周期

@@ -57,18 +57,11 @@
           placeholder="搜索评论内容或用户名..."
           clearable
           style="width: 300px"
-          @keyup.enter="handleSearch"
         >
           <template #prefix>
             <n-icon><SearchOutline /></n-icon>
           </template>
         </n-input>
-        <n-button @click="handleSearch" type="primary" ghost>
-          <template #icon>
-            <n-icon><SearchOutline /></n-icon>
-          </template>
-          搜索
-        </n-button>
       </div>
       
       <div class="toolbar-right">
@@ -114,7 +107,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, h, computed } from 'vue';
+import { ref, onMounted, h, computed, watch } from 'vue';
+
+// 简单的防抖函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 import { useAdminStore } from '@/stores/admin';
 import { storeToRefs } from 'pinia';
 import { format } from 'date-fns';
@@ -222,48 +224,49 @@ const columns = [
   }
 ];
 
-// 事件处理函数
-function handleSearch() {
-  const filters = {};
-  if (searchQuery.value.trim()) {
-    filters.search = searchQuery.value.trim();
-  }
-  adminStore.fetchComments(1, commentPagination.value.pageSize, filters);
-}
+// 创建防抖搜索函数
+const debouncedSearch = debounce(() => {
+  fetchCommentsWithFilters(1);
+}, 300);
 
-function handleSort() {
+// 获取评论列表（带筛选参数）
+function fetchCommentsWithFilters(page = commentPagination.value.page) {
   const filters = {};
+  
   if (searchQuery.value.trim()) {
     filters.search = searchQuery.value.trim();
   }
+  
   if (sortBy.value) {
     filters.sort = sortBy.value;
     filters.order = 'desc';
   }
-  adminStore.fetchComments(1, commentPagination.value.pageSize, filters);
+  
+  adminStore.fetchComments(page, commentPagination.value.pageSize, filters);
 }
+
+function handleSort() {
+  fetchCommentsWithFilters(commentPagination.value.page);
+}
+
+// 监听搜索输入变化
+watch(searchQuery, () => {
+  debouncedSearch();
+});
 
 function handleRefresh() {
   Promise.all([
-    adminStore.fetchComments(commentPagination.value.page, commentPagination.value.pageSize),
+    fetchCommentsWithFilters(commentPagination.value.page),
     adminStore.fetchCommentStats()
   ]);
 }
 
 function handlePageChange(page) {
-  const filters = {};
-  if (searchQuery.value.trim()) {
-    filters.search = searchQuery.value.trim();
-  }
-  adminStore.fetchComments(page, commentPagination.value.pageSize, filters);
+  fetchCommentsWithFilters(page);
 }
 
 function handlePageSizeChange(pageSize) {
-  const filters = {};
-  if (searchQuery.value.trim()) {
-    filters.search = searchQuery.value.trim();
-  }
-  adminStore.fetchComments(1, pageSize, filters);
+  fetchCommentsWithFilters(1);
 }
 
 function handleDelete(comment) {

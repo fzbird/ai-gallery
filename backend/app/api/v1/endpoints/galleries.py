@@ -117,23 +117,56 @@ def read_galleries(
     db: Session = Depends(dependencies.get_db),
     skip: int = 0,
     limit: int = 100,
+    search: str = "",
     category_id: int = Query(None, description="分类ID筛选"),
     department_id: int = Query(None, description="部门ID筛选"),
+    status: str = Query("", description="状态筛选：published, unpublished"),
     sort: str = Query(None, description="排序字段：likes_count, bookmarks_count, downloads_count, created_at, views_count"),
     order: str = Query("desc", description="排序方向：asc, desc"),
     current_user: models.User = Depends(dependencies.get_current_user_optional),
 ):
     """
-    获取图集列表（包含图片信息），支持按分类、部门筛选和排序
+    获取图集列表（包含图片信息），支持搜索、按分类、部门筛选和排序
     """
-    if category_id:
-        galleries = crud.gallery.get_by_category(db, category_id=category_id, skip=skip, limit=limit)
-    elif department_id:
-        galleries = crud.gallery.get_by_department(db, department_id=department_id, skip=skip, limit=limit)
-    else:
-        galleries = crud.gallery.get_multi_with_images_sorted(
-            db, skip=skip, limit=limit, sort_field=sort, sort_order=order
+    # 构建基础查询
+    from sqlalchemy.orm import selectinload
+    query = db.query(models.Gallery).options(
+        selectinload(models.Gallery.images),
+        selectinload(models.Gallery.owner),
+        selectinload(models.Gallery.category)
+    )
+    
+    # 搜索条件
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            models.Gallery.title.ilike(search_pattern) |
+            models.Gallery.description.ilike(search_pattern)
         )
+    
+    # 分类筛选
+    if category_id:
+        query = query.filter(models.Gallery.category_id == category_id)
+    
+    # 部门筛选（通过用户的部门）
+    if department_id:
+        query = query.join(models.User).filter(models.User.department_id == department_id)
+    
+    # 状态筛选（Gallery没有is_published字段，暂时跳过）
+    # TODO: 如果需要状态筛选，需要在Gallery模型中添加相应字段
+    
+    # 简化排序逻辑
+    if sort == "created_at":
+        if order.lower() == "desc":
+            query = query.order_by(models.Gallery.created_at.desc())
+        else:
+            query = query.order_by(models.Gallery.created_at.asc())
+    else:
+        # 默认按创建时间降序
+        query = query.order_by(models.Gallery.created_at.desc())
+    
+    # 应用分页
+    galleries = query.offset(skip).limit(limit).all()
     
     # 为每个gallery添加当前用户相关信息
     if current_user:

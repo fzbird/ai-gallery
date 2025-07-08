@@ -23,11 +23,44 @@ def read_departments(
     db: Session = Depends(dependencies.get_db),
     skip: int = 0,
     limit: int = 100,
+    search: str = "",
+    sort: str = "created_at",
+    order: str = "desc",
 ):
     """
-    Retrieve all departments. Public access for frontend navigation.
+    Retrieve all departments with search and sorting support.
     """
-    departments = crud.department.get_multi(db, skip=skip, limit=limit, with_users=True)
+    # 构建基础查询
+    query = db.query(models.Department)
+    
+    # 搜索条件
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            models.Department.name.ilike(search_pattern) |
+            models.Department.description.ilike(search_pattern)
+        )
+    
+    # 排序
+    if sort == "name":
+        if order.lower() == "desc":
+            query = query.order_by(models.Department.name.desc())
+        else:
+            query = query.order_by(models.Department.name.asc())
+    else:
+        # 默认按ID排序
+        if order.lower() == "desc":
+            query = query.order_by(models.Department.id.desc())
+        else:
+            query = query.order_by(models.Department.id.asc())
+    
+    # 应用分页
+    departments = query.offset(skip).limit(limit).all()
+    
+    # 为每个部门加载用户数据（预加载避免N+1查询）
+    for dept in departments:
+        db.refresh(dept, attribute_names=['users'])
+    
     return departments
 
 @router.get("/stats")

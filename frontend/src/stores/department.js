@@ -14,16 +14,22 @@ export const useDepartmentStore = defineStore('department', () => {
     total: 0
   });
 
-  async function fetchDepartments(page = 1, limit = 10) {
+  async function fetchDepartments(page = 1, limit = 10, filters = {}) {
     isLoading.value = true;
     try {
       const skip = (page - 1) * limit;
-      const params = { skip, limit };
+      const params = { 
+        skip, 
+        limit,
+        search: filters.search || '',
+        sort: filters.sort || 'name',
+        order: filters.order || 'asc'
+      };
       
       // 并行请求部门数据和总数
       const [departmentsResponse, countResponse] = await Promise.all([
         apiClient.get('/departments/', { params }),
-        apiClient.get('/departments/count')
+        apiClient.get('/departments/count', { params: { search: params.search } })
       ]);
       
       departments.value = departmentsResponse.data;

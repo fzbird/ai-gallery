@@ -52,16 +52,24 @@ export const useAdminStore = defineStore('admin', () => {
   const galleryStats = ref(null);
   const topicStats = ref(null);
 
-  async function fetchUsers(page = 1, limit = 10) {
+  async function fetchUsers(page = 1, limit = 10, filters = {}) {
     isLoadingUsers.value = true;
     try {
       const skip = (page - 1) * limit;
-      const params = { skip, limit };
+      const params = { 
+        skip, 
+        limit,
+        search: filters.search || '',
+        status: filters.status || '',
+        role: filters.role || '',
+        sort: filters.sort || 'created_at',
+        order: filters.order || 'desc'
+      };
       
       // 并行请求用户数据和总数
       const [usersResponse, countResponse] = await Promise.all([
         apiClient.get('/users/admin', { params }),
-        apiClient.get('/users/count')
+        apiClient.get('/users/count', { params: { search: params.search } })
       ]);
       
       users.value = usersResponse.data;

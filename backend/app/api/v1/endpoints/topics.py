@@ -22,16 +22,61 @@ def read_all_topics_admin(
     db: Session = Depends(get_db),
     skip: int = Query(0, ge=0, description="跳过的项目数"),
     limit: int = Query(10, ge=1, le=100, description="每页的项目数"),
+    search: str = Query("", description="搜索关键词"),
+    status: str = Query("", description="状态筛选：active, inactive"),
+    sort: str = Query("id", description="排序字段：id, name"),
+    order: str = Query("desc", description="排序方向：asc, desc"),
     current_user: models.User = Depends(get_current_active_user)
 ):
     """
-    获取所有专题，包括禁用的专题，并附带图集数量统计。
+    获取所有专题，支持搜索和筛选，并附带图集数量统计。
     仅限管理员访问。
     """
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="权限不足，需要管理员权限")
 
-    results, total = crud.topic.get_all_with_gallery_count(db=db, skip=skip, limit=limit)
+    # 构建基础查询
+    from sqlalchemy import func
+    query = db.query(models.Topic)
+    
+    # 搜索条件
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            models.Topic.name.ilike(search_pattern) |
+            models.Topic.description.ilike(search_pattern)
+        )
+    
+    # 状态筛选
+    if status == "active":
+        query = query.filter(models.Topic.is_active == True)
+    elif status == "inactive":
+        query = query.filter(models.Topic.is_active == False)
+    
+    # 排序
+    if sort == "name":
+        if order.lower() == "desc":
+            query = query.order_by(models.Topic.name.desc())
+        else:
+            query = query.order_by(models.Topic.name.asc())
+    else:
+        # 默认按ID排序
+        if order.lower() == "desc":
+            query = query.order_by(models.Topic.id.desc())
+        else:
+            query = query.order_by(models.Topic.id.asc())
+    
+    # 获取总数
+    total = query.count()
+    
+    # 应用分页
+    topics = query.offset(skip).limit(limit).all()
+    
+    # 为每个专题计算图集数量
+    results = []
+    for topic in topics:
+        gallery_count = len(getattr(topic, 'galleries', []))
+        results.append((topic, gallery_count))
     
     # 格式化响应数据
     items = []

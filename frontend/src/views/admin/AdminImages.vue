@@ -57,18 +57,11 @@
           placeholder="搜索图集标题、描述..."
           clearable
           style="width: 300px"
-          @keyup.enter="handleSearch"
         >
           <template #prefix>
             <n-icon><SearchOutline /></n-icon>
           </template>
         </n-input>
-        <n-button @click="handleSearch" type="primary" ghost>
-          <template #icon>
-            <n-icon><SearchOutline /></n-icon>
-          </template>
-          搜索
-        </n-button>
       </div>
       
       <div class="toolbar-right">
@@ -173,7 +166,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, h } from 'vue';
+import { ref, onMounted, computed, h, watch } from 'vue';
+
+// 简单的防抖函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 import { useAdminStore } from '@/stores/admin';
 import { useCategoryStore } from '@/stores/category';
 import { storeToRefs } from 'pinia';
@@ -347,44 +349,60 @@ const columns = [
   }
 ];
 
-// 事件处理函数
-function handleSearch() {
+// 创建防抖搜索函数
+const debouncedSearch = debounce(() => {
+  fetchGalleriesWithFilters(1);
+}, 300);
+
+// 获取图集列表（带筛选参数）
+function fetchGalleriesWithFilters(page = galleryPagination.value.page) {
   const filters = {};
+  
   if (searchQuery.value.trim()) {
-    // 注意：这里需要后端支持搜索功能，暂时使用客户端筛选
     filters.search = searchQuery.value.trim();
   }
-  adminStore.fetchGalleries(1, galleryPagination.value.pageSize, filters);
-}
-
-function handleFilter() {
-  const filters = {};
+  
   if (categoryFilter.value) {
     filters.category_id = categoryFilter.value;
   }
-  adminStore.fetchGalleries(1, galleryPagination.value.pageSize, filters);
-}
-
-function handleSort() {
-  const filters = {};
+  
   if (sortBy.value) {
     filters.sort = sortBy.value;
     filters.order = 'desc';
   }
-  adminStore.fetchGalleries(1, galleryPagination.value.pageSize, filters);
+  
+  adminStore.fetchGalleries(page, galleryPagination.value.pageSize, filters);
+}
+
+function handleFilter() {
+  fetchGalleriesWithFilters(1);
+}
+
+function handleSort() {
+  fetchGalleriesWithFilters(galleryPagination.value.page);
 }
 
 function handleRefresh() {
-  adminStore.fetchGalleries(galleryPagination.value.page, galleryPagination.value.pageSize);
+  fetchGalleriesWithFilters(galleryPagination.value.page);
 }
 
 function handlePageChange(page) {
-  adminStore.fetchGalleries(page, galleryPagination.value.pageSize);
+  fetchGalleriesWithFilters(page);
 }
 
 function handlePageSizeChange(pageSize) {
-  adminStore.fetchGalleries(1, pageSize);
+  fetchGalleriesWithFilters(1);
 }
+
+// 监听搜索输入变化
+watch(searchQuery, () => {
+  debouncedSearch();
+});
+
+// 监听筛选条件变化
+watch([categoryFilter], () => {
+  fetchGalleriesWithFilters(1);
+});
 
 function handleEdit(gallery) {
   editForm.value = {

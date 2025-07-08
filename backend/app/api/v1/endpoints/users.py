@@ -193,12 +193,58 @@ def read_users_admin(
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
+    search: str = "",
+    status: str = "",
+    role: str = "",
+    sort: str = "created_at",
+    order: str = "desc",
     current_user: models.User = Depends(dependencies.get_current_active_superuser),
 ):
     """
-    Retrieve all users. Only for superusers.
+    Retrieve all users with search and filtering. Only for superusers.
     """
-    users = crud.user.get_multi(db, skip=skip, limit=limit, options=[selectinload(models.User.department)])
+    # 构建基础查询
+    query = db.query(models.User).options(selectinload(models.User.department))
+    
+    # 搜索条件
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            models.User.username.ilike(search_pattern) |
+            models.User.email.ilike(search_pattern) |
+            models.User.bio.ilike(search_pattern)
+        )
+    
+    # 状态筛选
+    if status == "active":
+        query = query.filter(models.User.is_active == True)
+    elif status == "inactive":
+        query = query.filter(models.User.is_active == False)
+    
+    # 角色筛选
+    if role == "admin":
+        query = query.filter(models.User.is_superuser == True)
+    elif role == "user":
+        query = query.filter(models.User.is_superuser == False)
+    
+    # 排序
+    if sort == "username":
+        order_by_field = models.User.username
+    elif sort == "created_at":
+        order_by_field = models.User.created_at
+    elif sort == "department":
+        # 按部门ID排序（简化处理）
+        order_by_field = models.User.department_id
+    else:
+        order_by_field = models.User.created_at
+    
+    if order.lower() == "desc":
+        query = query.order_by(order_by_field.desc())
+    else:
+        query = query.order_by(order_by_field.asc())
+    
+    # 应用分页
+    users = query.offset(skip).limit(limit).all()
     return users
 
 @router.post("/", response_model=schemas.User)
