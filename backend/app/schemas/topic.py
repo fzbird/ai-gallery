@@ -21,6 +21,7 @@ class TopicUpdate(BaseModel):
     slug: Optional[str] = Field(None, max_length=100, description="URL友好的标识符")
     description: Optional[str] = Field(None, description="专题描述")
     cover_image_id: Optional[int] = Field(None, description="专题封面图片ID")
+    cover_image_url: Optional[str] = Field(None, description="专题封面图片URL（将自动转换为图片ID）")
     is_active: Optional[bool] = Field(None, description="是否活跃")
     is_featured: Optional[bool] = Field(None, description="是否为推荐专题")
 

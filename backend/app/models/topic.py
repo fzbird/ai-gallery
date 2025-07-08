@@ -45,7 +45,8 @@ class Topic(Base):
     def cover_image_url(self):
         """获取封面图片URL，兼容前端"""
         if self.cover_image:
-            return f"/uploads/{self.cover_image.filename}"
+            # 专题封面图片存储在 /uploads/topics/ 目录下
+            return f"/uploads/topics/{self.cover_image.filename}"
         return "/uploads/default_topic_cover.jpg"  # 返回默认图片
 
     def __repr__(self):

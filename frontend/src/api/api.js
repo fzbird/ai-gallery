@@ -114,7 +114,28 @@ export const topics = {
   deleteTopic: (topicId) => getApiClient().delete(`/topics/${topicId}`),
   
   // 获取所有专题（管理员）
-  getAllTopicsAdmin: (params = {}) => getApiClient().get('/topics/admin/all', { params })
+  getAllTopicsAdmin: (params = {}) => getApiClient().get('/topics/admin/all', { params }),
+  
+  // 上传专题封面图片（管理员）
+  uploadTopicCover: (topicId, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // 获取当前认证token
+    const authStore = useAuthStore();
+    const token = authStore.token;
+    
+    if (!token) {
+      throw new Error('用户未登录');
+    }
+    
+    return getApiClient().post(`/topics/${topicId}/upload-cover`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
 };
 
 // 分类相关API

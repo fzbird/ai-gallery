@@ -220,6 +220,36 @@ export const useTopicStore = defineStore('topic', () => {
     }
   };
 
+  // 上传专题封面图片 (管理员功能)
+  const uploadTopicCover = async (topicId, file) => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      console.log('Uploading cover for topic:', topicId);
+      console.log('File info:', { name: file.name, size: file.size, type: file.type });
+      
+      const response = await topics.uploadTopicCover(topicId, file);
+      console.log('Upload successful:', response.data);
+      
+      // 刷新专题列表以更新封面显示
+      await fetchAdminTopics();
+      return response;
+    } catch (err) {
+      console.error('上传封面失败:', err);
+      console.error('Error details:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+      
+      error.value = err.response?.data?.detail || err.message || '上传封面失败';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   // 重置状态
   const reset = () => {
     topicList.value = [];
@@ -250,6 +280,7 @@ export const useTopicStore = defineStore('topic', () => {
     createTopic,
     updateTopic,
     deleteTopic,
+    uploadTopicCover,
     reset
   };
 }); 

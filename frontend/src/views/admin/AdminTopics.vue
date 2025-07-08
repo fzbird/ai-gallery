@@ -132,6 +132,10 @@
           <n-input v-model:value="createForm.name" placeholder="请输入专题名称" />
         </n-form-item>
         
+        <n-form-item label="URL标识" path="slug">
+          <n-input v-model:value="createForm.slug" placeholder="请输入URL友好的标识符" />
+        </n-form-item>
+        
         <n-form-item label="专题描述" path="description">
           <n-input
             v-model:value="createForm.description"
@@ -141,8 +145,44 @@
           />
         </n-form-item>
 
-        <n-form-item label="封面图片URL" path="cover_image_url">
-          <n-input v-model:value="createForm.cover_image_url" placeholder="请输入专题封面图片URL" />
+        <n-form-item label="封面图片" path="cover_image_url">
+          <div class="cover-image-section">
+            <!-- 当前封面预览 -->
+            <div v-if="createForm.cover_image_url" class="current-cover-preview">
+              <n-image
+                :src="createForm.cover_image_url"
+                width="200"
+                height="120"
+                object-fit="cover"
+                style="border-radius: 6px"
+              />
+              <div class="cover-info">
+                <span>当前封面</span>
+                <n-button size="small" @click="createForm.cover_image_url = ''" type="error" ghost>
+                  <template #icon>
+                    <n-icon><TrashOutline /></n-icon>
+                  </template>
+                  移除
+                </n-button>
+              </div>
+            </div>
+            
+            <!-- URL输入 -->
+            <div class="upload-section">
+              <n-input
+                v-model:value="createForm.cover_image_url"
+                placeholder="输入封面图片URL"
+                clearable
+              >
+                <template #prefix>
+                  <n-icon><LinkOutline /></n-icon>
+                </template>
+              </n-input>
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                提示：创建专题后可以在编辑页面上传本地图片
+              </p>
+            </div>
+          </div>
         </n-form-item>
         
         <n-form-item label="状态" path="is_active">
@@ -184,6 +224,10 @@
           <n-input v-model:value="editForm.name" placeholder="请输入专题名称" />
         </n-form-item>
         
+        <n-form-item label="URL标识" path="slug">
+          <n-input v-model:value="editForm.slug" placeholder="请输入URL友好的标识符" />
+        </n-form-item>
+        
         <n-form-item label="专题描述" path="description">
           <n-input
             v-model:value="editForm.description"
@@ -193,8 +237,63 @@
           />
         </n-form-item>
 
-        <n-form-item label="封面图片URL" path="cover_image_url">
-          <n-input v-model:value="editForm.cover_image_url" placeholder="请输入专题封面图片URL" />
+        <n-form-item label="封面图片" path="cover_image_url">
+          <div class="cover-image-section">
+            <!-- 当前封面预览 -->
+            <div v-if="editForm.cover_image_url" class="current-cover-preview">
+              <n-image
+                :src="editForm.cover_image_url"
+                width="200"
+                height="120"
+                object-fit="cover"
+                style="border-radius: 6px"
+              />
+              <div class="cover-info">
+                <span>当前封面</span>
+                <n-button size="small" @click="removeCover" type="error" ghost>
+                  <template #icon>
+                    <n-icon><TrashOutline /></n-icon>
+                  </template>
+                  移除
+                </n-button>
+              </div>
+            </div>
+            
+            <!-- 上传新封面 -->
+            <div class="upload-section">
+              <n-button 
+                :loading="isUploading" 
+                style="width: 100%"
+                @click="triggerCoverUpload"
+              >
+                <template #icon>
+                  <n-icon><CloudUploadOutline /></n-icon>
+                </template>
+                {{ editForm.cover_image_url ? '更换封面' : '上传封面图片' }}
+              </n-button>
+              
+              <!-- 隐藏的文件输入 -->
+              <input 
+                ref="coverFileInput"
+                type="file" 
+                accept="image/*" 
+                style="display: none" 
+                @change="handleCoverFileChange"
+              />
+              
+              <!-- URL输入备选方案 -->
+              <n-divider style="margin: 12px 0">或</n-divider>
+              <n-input
+                v-model:value="editForm.cover_image_url"
+                placeholder="输入封面图片URL"
+                clearable
+              >
+                <template #prefix>
+                  <n-icon><LinkOutline /></n-icon>
+                </template>
+              </n-input>
+            </div>
+          </div>
         </n-form-item>
         
         <n-form-item label="状态" path="is_active">
@@ -221,20 +320,23 @@
 import { ref, onMounted, h, computed } from 'vue';
 import { useTopicStore } from '@/stores/topic';
 import { useAdminStore } from '@/stores/admin';
+import { useAuthStore } from '@/stores/auth';
 import { storeToRefs } from 'pinia';
 import { format } from 'date-fns';
 import {
   NDataTable, NButton, NImage, NTag, NInput, NSwitch,
-  NIcon, NSpace, NModal, NForm, NFormItem, useDialog, useMessage
+  NIcon, NSpace, NModal, NForm, NFormItem, NDivider,
+  useDialog, useMessage
 } from 'naive-ui';
 import {
   SearchOutline, RefreshOutline, CreateOutline, TrashOutline,
-  AddOutline, EyeOutline, LayersOutline
+  AddOutline, EyeOutline, LayersOutline, CloudUploadOutline, LinkOutline
 } from '@vicons/ionicons5';
 import AdminPagination from '@/components/common/AdminPagination.vue';
 
 const topicStore = useTopicStore();
 const adminStore = useAdminStore();
+const authStore = useAuthStore();
 const { topics, isLoadingTopics, topicPagination } = storeToRefs(topicStore);
 const { topicStats } = storeToRefs(adminStore);
 
@@ -253,6 +355,7 @@ const searchQuery = ref('');
 const showCreateModal = ref(false);
 const createForm = ref({
   name: '',
+  slug: '',
   description: '',
   cover_image_url: '',
   is_active: true
@@ -272,11 +375,20 @@ const editForm = ref({
 const editFormRef = ref(null);
 const isSaving = ref(false);
 
+// 图片上传相关
+const coverFileInput = ref(null);
+const isUploading = ref(false);
+
 // 表单验证规则
 const formRules = {
   name: [
     { required: true, message: '请输入专题名称', trigger: 'blur' },
     { min: 2, max: 50, message: '专题名称长度应为2-50个字符', trigger: 'blur' }
+  ],
+  slug: [
+    { required: true, message: '请输入URL标识', trigger: 'blur' },
+    { min: 2, max: 50, message: 'URL标识长度应为2-50个字符', trigger: 'blur' },
+    { pattern: /^[a-z0-9-_]+$/, message: 'URL标识只能包含小写字母、数字、短横线和下划线', trigger: 'blur' }
   ],
   description: [
     { max: 500, message: '描述不能超过500个字符', trigger: 'blur' }
@@ -412,6 +524,7 @@ async function handleCreate() {
     // 重置表单
     createForm.value = {
       name: '',
+      slug: '',
       description: '',
       cover_image_url: '',
       is_active: true
@@ -427,6 +540,7 @@ function handleEdit(topic) {
   editForm.value = {
     id: topic.id,
     name: topic.name,
+    slug: topic.slug || '',
     description: topic.description || '',
     cover_image_url: topic.cover_image_url || '',
     is_active: topic.is_active
@@ -439,12 +553,16 @@ async function handleSaveEdit() {
     await editFormRef.value?.validate();
     isSaving.value = true;
     
+    // 从editForm中排除id，保留cover_image_url让后端处理
     const { id, ...updateData } = editForm.value;
+    console.log('Saving topic data:', updateData);
+    
     await topicStore.updateTopic(id, updateData, true);
     
     message.success('专题更新成功');
     showEditModal.value = false;
   } catch (error) {
+    console.error('专题更新失败:', error);
     message.error('专题更新失败：' + (error.message || '未知错误'));
   } finally {
     isSaving.value = false;
@@ -466,6 +584,85 @@ function handleDelete(topic) {
       }
     }
   });
+}
+
+// 触发封面图片上传
+function triggerCoverUpload() {
+  coverFileInput.value?.click();
+}
+
+// 处理封面图片上传
+async function handleCoverFileChange(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    message.error('请选择图片文件');
+    return;
+  }
+
+  // 验证文件大小（限制为5MB）
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) {
+    message.error('图片文件大小不能超过5MB');
+    return;
+  }
+
+  try {
+    isUploading.value = true;
+    
+    console.log('Uploading file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
+    // 创建FormData
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // 调用上传API
+    const response = await fetch(`/api/v1/topics/${editForm.value.id}/upload-cover`, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+        // 不设置Content-Type，让浏览器自动设置
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `上传失败: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    // 更新编辑表单中的封面URL
+    editForm.value.cover_image_url = result.cover_image_url;
+    
+    message.success('封面上传成功！');
+    
+    // 刷新专题列表
+    await topicStore.fetchAdminTopics();
+    
+  } catch (error) {
+    console.error('封面上传失败:', error);
+    message.error(error.message || '封面上传失败，请重试');
+  } finally {
+    isUploading.value = false;
+    // 清空文件输入，允许重新选择同一文件
+    if (coverFileInput.value) {
+      coverFileInput.value.value = '';
+    }
+  }
+}
+
+// 移除封面
+function removeCover() {
+  editForm.value.cover_image_url = '';
+  message.info('已移除封面图片');
 }
 
 // 生命周期
@@ -677,5 +874,40 @@ onMounted(async () => {
   .toolbar-right {
     justify-content: center;
   }
+}
+
+/* 封面图片上传样式 */
+.cover-image-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.current-cover-preview {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.cover-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cover-info > span {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 </style> 
