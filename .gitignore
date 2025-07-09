@@ -82,7 +82,7 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Upload files (保护用户上传的文件)
-/backend/uploads/
+/backend/uploads/*
 !/backend/uploads/.gitkeep
 
 # Logs
@@ -149,3 +149,7 @@ dmypy.json
 # Temporary folders
 tmp/
 temp/ 
+
+# 数据库
+gallerydb.sql
+gallerydb_all.sql
