@@ -6,6 +6,31 @@
 echo "🚀 Gallery 自动部署脚本 v2.0"
 echo "=============================="
 
+# 检查和修复文件权限
+echo "🔧 检查文件权限..."
+if [ -f "backend/entrypoint.sh" ]; then
+    # 检查entrypoint.sh是否有执行权限
+    if [ ! -x "backend/entrypoint.sh" ]; then
+        echo "⚠️  修复entrypoint.sh执行权限..."
+        chmod +x backend/entrypoint.sh
+        echo "✅ entrypoint.sh权限已修复"
+    else
+        echo "✅ entrypoint.sh权限正常"
+    fi
+else
+    echo "❌ 找不到backend/entrypoint.sh文件"
+    exit 1
+fi
+
+# 修复Windows换行符问题
+if command -v dos2unix >/dev/null 2>&1; then
+    dos2unix backend/entrypoint.sh 2>/dev/null || true
+    echo "✅ 换行符格式已修复"
+elif command -v sed >/dev/null 2>&1; then
+    sed -i 's/\r$//' backend/entrypoint.sh 2>/dev/null || true
+    echo "✅ 换行符格式已修复"
+fi
+
 # 获取服务器IP - 多种方法兼容，优先获取内网IP
 get_server_ip() {
     local ip=""

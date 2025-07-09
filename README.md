@@ -108,7 +108,14 @@ git clone <repository-url>
 cd Gallery
 ```
 
-2. **运行一键部署脚本**
+2. **修复文件权限（如果需要）**
+```bash
+# 如果在不同操作系统间git clone后出现权限问题，运行此脚本
+chmod +x fix_permissions.sh
+./fix_permissions.sh
+```
+
+3. **运行一键部署脚本**
 ```bash
 chmod +x deploy.sh
 ./deploy.sh
@@ -382,6 +389,9 @@ Gallery/
 ├── docker-compose.dev.yml  # 开发环境配置
 ├── docker-compose.prod.yml # 生产环境配置
 ├── deploy.sh              # 一键部署脚本
+├── fix_permissions.sh     # 权限修复脚本
+├── test_fix.sh            # 权限修复测试脚本
+├── DOCKER_PERMISSION_FIX.md # Docker权限问题修复指南
 ├── DOCKER_PORT_GUIDE.md   # 端口配置指南
 ├── ENV_CONFIG_IMPROVEMENT.md # 环境配置改进说明
 └── README.md              # 项目说明
@@ -428,7 +438,31 @@ Gallery/
 
 ### 常见问题
 
-1. **部署脚本运行失败**
+1. **Docker容器权限错误**
+   ```
+   ERROR: Cannot start service backend: failed to create task for container: 
+   exec: "/app/entrypoint.sh": permission denied
+   ```
+   
+   **解决方案：**
+   ```bash
+   # 方法1：使用权限修复脚本（推荐）
+   chmod +x fix_permissions.sh
+   ./fix_permissions.sh
+   
+   # 方法2：手动修复权限
+   chmod +x backend/entrypoint.sh
+   chmod +x deploy.sh
+   
+   # 方法3：修复换行符问题
+   dos2unix backend/entrypoint.sh  # 如果安装了dos2unix
+   # 或者
+   sed -i 's/\r$//' backend/entrypoint.sh
+   ```
+   
+   **原因：** 在不同操作系统间git clone时，文件权限可能丢失或换行符格式不兼容
+
+2. **部署脚本运行失败**
    - 确保脚本有执行权限：`chmod +x deploy.sh`
    - 检查Docker和Docker Compose是否正确安装
    - 确认当前用户有Docker权限
