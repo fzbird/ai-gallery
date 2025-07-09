@@ -38,14 +38,39 @@ else
     exit 1
 fi
 
+# 修复 startup.sh 权限
+echo ""
+echo "🔍 检查 startup.sh 权限..."
+if [ -f "backend/startup.sh" ]; then
+    # 显示当前权限
+    current_perms=$(ls -l backend/startup.sh)
+    echo "当前权限: $current_perms"
+    
+    # 修复权限
+    chmod +x backend/startup.sh
+    
+    # 验证修复结果
+    if [ -x "backend/startup.sh" ]; then
+        echo "✅ startup.sh 权限已修复"
+    else
+        echo "❌ startup.sh 权限修复失败"
+        exit 1
+    fi
+else
+    echo "❌ 找不到 backend/startup.sh 文件"
+    exit 1
+fi
+
 # 修复换行符问题（Windows/Linux兼容）
 echo ""
 echo "🔄 修复换行符格式..."
 if command -v dos2unix >/dev/null 2>&1; then
     dos2unix backend/entrypoint.sh 2>/dev/null
+    dos2unix backend/startup.sh 2>/dev/null
     echo "✅ 使用 dos2unix 修复换行符"
 elif command -v sed >/dev/null 2>&1; then
     sed -i 's/\r$//' backend/entrypoint.sh 2>/dev/null
+    sed -i 's/\r$//' backend/startup.sh 2>/dev/null
     echo "✅ 使用 sed 修复换行符"
 else
     echo "⚠️  未找到 dos2unix 或 sed，跳过换行符修复"
@@ -80,6 +105,7 @@ echo ""
 echo "📋 最终权限状态:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 ls -la backend/entrypoint.sh
+ls -la backend/startup.sh
 [ -f "deploy.sh" ] && ls -la deploy.sh
 [ -f "deploy_linux.sh" ] && ls -la deploy_linux.sh
 

@@ -22,12 +22,28 @@ else
     exit 1
 fi
 
+if [ -f "backend/startup.sh" ]; then
+    # 检查startup.sh是否有执行权限
+    if [ ! -x "backend/startup.sh" ]; then
+        echo "⚠️  修复startup.sh执行权限..."
+        chmod +x backend/startup.sh
+        echo "✅ startup.sh权限已修复"
+    else
+        echo "✅ startup.sh权限正常"
+    fi
+else
+    echo "❌ 找不到backend/startup.sh文件"
+    exit 1
+fi
+
 # 修复Windows换行符问题
 if command -v dos2unix >/dev/null 2>&1; then
     dos2unix backend/entrypoint.sh 2>/dev/null || true
+    dos2unix backend/startup.sh 2>/dev/null || true
     echo "✅ 换行符格式已修复"
 elif command -v sed >/dev/null 2>&1; then
     sed -i 's/\r$//' backend/entrypoint.sh 2>/dev/null || true
+    sed -i 's/\r$//' backend/startup.sh 2>/dev/null || true
     echo "✅ 换行符格式已修复"
 fi
 
