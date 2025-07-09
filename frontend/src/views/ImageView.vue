@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useImageStore } from '@/stores/image';
 import { useAuthStore } from '@/stores/auth';
@@ -8,11 +8,12 @@ import { storeToRefs } from 'pinia';
 import { NCard, NImage, NSpace, NTag, NButton, NIcon, NSpin, NResult, useMessage } from 'naive-ui';
 import { 
   Heart, HeartOutline, Bookmark, BookmarkOutline, DownloadOutline,
-  PersonOutline, FolderOutline, TimeOutline, EyeOutline
+  PersonOutline, FolderOutline, TimeOutline, EyeOutline, ExpandOutline
 } from '@vicons/ionicons5';
 import CommentsSection from '@/components/CommentsSection.vue';
 import AppFooter from '@/components/AppFooter.vue';
 import ImageViewSkeleton from '@/components/skeletons/ImageViewSkeleton.vue';
+import ImageViewer from '@/components/ImageViewer.vue';
 import { API_BASE_URL } from '@/api/api.js';
 
 const props = defineProps({
@@ -29,6 +30,21 @@ const { setTitle } = usePageTitle();
 const { currentImage, isLoading } = storeToRefs(imageStore);
 const { isAuthenticated } = storeToRefs(authStore);
 const message = useMessage();
+
+// 图片查看器状态
+const showImageViewer = ref(false);
+
+// 计算图片信息
+const imageInfo = computed(() => {
+  if (!currentImage.value) return {};
+  
+  return {
+    src: `${API_BASE_URL()}${currentImage.value.image_url}`,
+    title: currentImage.value.title,
+    size: currentImage.value.file_size ? formatFileSize(currentImage.value.file_size) : '',
+    downloadName: currentImage.value.filename || 'image'
+  };
+});
 
 onMounted(() => {
   imageStore.fetchImageById(props.id);
@@ -74,6 +90,22 @@ const handleDownload = () => {
   document.body.removeChild(a);
   
   message.success('图片已开始下载');
+};
+
+// 打开图片查看器
+const openImageViewer = () => {
+  showImageViewer.value = true;
+};
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (!bytes) return '';
+  
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const size = (bytes / Math.pow(1024, i)).toFixed(1);
+  
+  return `${size} ${sizes[i]}`;
 };
 
 // 格式化日期
@@ -180,6 +212,18 @@ function formatDate(dateString) {
               <n-button 
                 type="default"
                 size="large"
+                @click="openImageViewer"
+                ghost
+              >
+                <template #icon>
+                  <n-icon><ExpandOutline /></n-icon>
+                </template>
+                查看大图
+              </n-button>
+              
+              <n-button 
+                type="default"
+                size="large"
                 @click="handleDownload"
                 ghost
               >
@@ -199,12 +243,22 @@ function formatDate(dateString) {
         <div class="container">
           <!-- Image display section -->
           <div class="image-display-section">
-            <div class="image-container">
-              <img 
+            <div class="image-container" @click="openImageViewer">
+              <div class="image-wrapper">
+                <img 
                   :src="`${API_BASE_URL()}${currentImage.image_url}`" 
-                :alt="currentImage.title" 
-                class="main-image" 
-              />
+                  :alt="currentImage.title" 
+                  class="main-image" 
+                />
+                <div class="image-overlay">
+                  <div class="overlay-content">
+                    <n-icon size="40" class="expand-icon">
+                      <ExpandOutline />
+                    </n-icon>
+                    <p class="overlay-text">点击查看大图</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -235,6 +289,16 @@ function formatDate(dateString) {
         </template>
       </n-result>
     </div>
+
+    <!-- Image Viewer -->
+    <ImageViewer
+      v-if="currentImage"
+      v-model:show="showImageViewer"
+      :image-src="imageInfo.src"
+      :image-title="imageInfo.title"
+      :image-size="imageInfo.size"
+      :download-name="imageInfo.downloadName"
+    />
   </div>
 </template>
 
@@ -422,12 +486,61 @@ function formatDate(dateString) {
   justify-content: center;
   align-items: center;
   min-height: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.image-container:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.image-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
 .main-image {
   max-width: 100%;
   max-height: 70vh;
   border-radius: 8px;
+  transition: filter 0.3s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-wrapper:hover .image-overlay {
+  opacity: 1;
+}
+
+.overlay-content {
+  text-align: center;
+  color: white;
+}
+
+.expand-icon {
+  margin-bottom: 8px;
+  color: white;
+}
+
+.overlay-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
 }
 
 .comments-section {
