@@ -362,7 +362,7 @@ update_env_value() {
 }
 
 # 基础CORS配置（开发环境默认配置）
-BASE_CORS_ORIGINS="http://localhost:3300,http://localhost:3301,http://127.0.0.1:3300,http://127.0.0.1:3301"
+BASE_CORS_ORIGINS="http://localhost:3300,http://127.0.0.1:3300"
 
 # 根据环境和API配置生成CORS配置
 CORS_ORIGINS="$BASE_CORS_ORIGINS"
@@ -381,7 +381,7 @@ if [ "$env_choice" = "2" ] || [ "$env_choice" = "3" ]; then
 fi
 
 # 更新数据库配置（MySQL服务器运行在相同地址）
-DATABASE_URL="mysql+pymysql://root:fzbird20250615@$SERVER_IP:3306/gallerydb?charset=utf8mb4"
+DATABASE_URL="mysql+pymysql://root:fzbird20250615@$SERVER_IP:3306/gallery_db?charset=utf8mb4"
 
 # 更新配置文件
 echo "🔧 更新配置项..."
