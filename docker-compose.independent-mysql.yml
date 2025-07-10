@@ -1,0 +1,113 @@
+# ========================================================================
+# Gallery 项目连接独立 MySQL 服务的 Docker Compose 配置
+# ========================================================================
+# 
+# 此配置文件用于启动 Gallery 项目，连接到独立的共享 MySQL 数据库服务
+# 
+# 使用方法:
+#   docker-compose -f docker-compose.independent-mysql.yml up -d
+# 
+# 前提条件:
+#   1. 独立 MySQL 服务必须已经运行
+#   2. 执行: ./start-independent-mysql.sh
+# 
+# ========================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    pull_policy: always
+    container_name: gallery_backend
+    restart: always
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    
+    volumes:
+      - ./backend:/app
+    
+    ports:
+      - "8000:8000"
+    
+    environment:
+      # 连接到独立的共享 MySQL 服务
+      - DATABASE_URL=mysql+pymysql://gallery_user:gallery_pass_2024@host.docker.internal:3306/gallery_db
+      
+      # 备用连接方式（如果加入共享网络）
+      # - DATABASE_URL=mysql+pymysql://gallery_user:gallery_pass_2024@shared_mysql_server:3306/gallery_db
+      
+      # 应用配置
+      - SECRET_KEY=gallery-secret-key-2024
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - HOST=0.0.0.0
+      - PORT=8000
+      
+      # CORS 配置
+      - FRONTEND_URL=http://localhost:3300
+      - ALLOWED_ORIGINS=["http://localhost:3300", "http://localhost"]
+    
+    # 允许访问主机服务
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    networks:
+      - gallery-network
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      cache_from:
+        - node:18-alpine
+        - gallery-frontend:latest
+    pull_policy: always
+    container_name: gallery_frontend
+    restart: always
+    
+    ports:
+      # 开发/测试端口：http://localhost:3300
+      - "3300:80"
+      
+      # 生产/标准端口：http://localhost (反向代理模式)
+      - "80:80"
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    networks:
+      - gallery-network
+    
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# 网络配置
+networks:
+  gallery-network:
+    driver: bridge
+    name: gallery-network
+    
+  # 可选：连接到共享 MySQL 网络
+  # shared-mysql-network:
+  #   external: true
+
+# 注意：
+# 1. 此配置不包含 MySQL 服务，因为使用独立的 MySQL 服务
+# 2. backend 通过 host.docker.internal 连接到宿主机的 MySQL 服务
+# 3. 如果需要，可以取消注释共享网络配置，直接连接到 MySQL 容器 

@@ -568,3 +568,297 @@ docker system prune -a
 ---
 
 ⭐ 如果这个项目对你有帮助，请给它一个 Star！ 
+
+# 独立共享 MySQL 数据库服务
+
+## 概述
+
+这是一个完全独立于任何项目的共享 MySQL 数据库服务，可以为多个项目提供数据库服务。每个项目拥有独立的数据库和专用用户，确保数据隔离和安全性。
+
+## 特性
+
+- ✅ **完全独立**: 不依赖任何特定项目
+- ✅ **多项目支持**: 支持多个项目使用不同数据库
+- ✅ **数据隔离**: 每个项目拥有独立的数据库和用户
+- ✅ **管理界面**: 包含 phpMyAdmin 管理面板
+- ✅ **性能监控**: 内置 MySQL 性能监控
+- ✅ **自动备份**: 支持数据库备份功能
+- ✅ **高性能配置**: 优化的 MySQL 配置
+- ✅ **Docker 部署**: 基于 Docker 容器化部署
+
+## 目录结构
+
+```
+shared-mysql-service/
+├── docker-compose.yml          # 主要的 Docker Compose 配置
+├── mysql.env                   # 环境变量配置
+├── mysql-service.sh           # 服务管理脚本
+├── README.md                  # 本文档
+├── config/
+│   └── mysql.cnf             # MySQL 优化配置
+├── init/
+│   └── 01-create-databases.sql # 数据库初始化脚本
+├── logs/                      # MySQL 日志目录
+└── backups/                   # 数据库备份目录
+```
+
+## 快速开始
+
+### 1. 启动服务
+
+```bash
+./mysql-service.sh start
+```
+
+### 2. 查看服务状态
+
+```bash
+./mysql-service.sh status
+```
+
+### 3. 连接到数据库
+
+```bash
+# 使用管理脚本连接
+./mysql-service.sh connect
+
+# 或直接使用 MySQL 客户端
+mysql -h localhost -P 3306 -u gallery_user -p gallery_db
+```
+
+### 4. 访问管理界面
+
+- **phpMyAdmin**: http://localhost:8080
+- **监控面板**: http://localhost:9104/metrics
+
+## 预配置的项目数据库
+
+服务启动时会自动创建以下数据库：
+
+| 项目 | 数据库名 | 用户名 | 密码 |
+|------|----------|--------|------|
+| Gallery | gallery_db | gallery_user | gallery_pass_2024 |
+| 博客 | blog_db | blog_user | blog_pass_2024 |
+| 商城 | shop_db | shop_user | shop_pass_2024 |
+| CMS | cms_db | cms_user | cms_pass_2024 |
+
+## 管理命令
+
+```bash
+# 服务管理
+./mysql-service.sh start          # 启动服务
+./mysql-service.sh stop           # 停止服务
+./mysql-service.sh restart        # 重启服务
+./mysql-service.sh status         # 查看状态
+
+# 数据库管理
+./mysql-service.sh list-dbs       # 列出所有数据库
+./mysql-service.sh add-project myapp  # 为新项目创建数据库
+./mysql-service.sh backup         # 备份所有数据库
+
+# 日志和监控
+./mysql-service.sh logs           # 查看服务日志
+./mysql-service.sh connect        # 连接到 MySQL
+
+# 清理
+./mysql-service.sh cleanup        # 清理服务和数据
+```
+
+## 为新项目创建数据库
+
+```bash
+# 为名为 "myapp" 的项目创建数据库
+./mysql-service.sh add-project myapp
+
+# 这将创建:
+# - 数据库: myapp_db
+# - 用户: myapp_user
+# - 密码: myapp_pass_2024
+```
+
+## 项目连接配置
+
+### Gallery 项目连接配置
+
+修改 Gallery 项目的数据库配置：
+
+```python
+# backend/app/core/config.py
+DATABASE_URL = "mysql+pymysql://gallery_user:gallery_pass_2024@localhost:3306/gallery_db"
+```
+
+### 其他项目连接示例
+
+```python
+# Python (SQLAlchemy)
+DATABASE_URL = "mysql+pymysql://project_user:project_pass_2024@localhost:3306/project_db"
+
+# Node.js (Sequelize)
+const sequelize = new Sequelize('project_db', 'project_user', 'project_pass_2024', {
+  host: 'localhost',
+  port: 3306,
+  dialect: 'mysql'
+});
+
+# PHP (PDO)
+$pdo = new PDO('mysql:host=localhost;port=3306;dbname=project_db', 'project_user', 'project_pass_2024');
+
+# Java (JDBC)
+jdbc:mysql://localhost:3306/project_db?user=project_user&password=project_pass_2024
+```
+
+## 网络配置
+
+- **网络名称**: `shared-mysql-network`
+- **子网**: `172.30.0.0/16`
+- **网关**: `172.30.0.1`
+
+如果有网络冲突，可以在 `docker-compose.yml` 中修改子网配置。
+
+## 服务端口
+
+| 服务 | 容器名 | 端口 | 说明 |
+|------|--------|------|------|
+| MySQL | shared_mysql_server | 3306 | 数据库连接端口 |
+| phpMyAdmin | mysql_admin_panel | 8080 | Web 管理界面 |
+| MySQL Exporter | mysql_monitor | 9104 | 监控数据接口 |
+
+## 备份和恢复
+
+### 自动备份
+
+```bash
+# 备份所有数据库
+./mysql-service.sh backup
+```
+
+备份文件保存在 `backups/` 目录下，包含：
+- 各个项目数据库的单独备份
+- 完整数据库备份
+
+### 手动恢复
+
+```bash
+# 恢复特定数据库
+docker exec -i shared_mysql_server mysql -u root -p mysql_root_password_2024 gallery_db < backups/gallery_db_backup_YYYYMMDD_HHMMSS.sql
+
+# 恢复完整备份
+docker exec -i shared_mysql_server mysql -u root -p mysql_root_password_2024 < backups/full_backup_YYYYMMDD_HHMMSS.sql
+```
+
+## 安全配置
+
+### 默认密码
+
+- **Root 密码**: `mysql_root_password_2024`
+- **项目用户密码**: `{项目名}_pass_2024`
+
+⚠️ **重要**: 在生产环境中，请修改 `mysql.env` 文件中的默认密码。
+
+### 用户权限
+
+- **Root 用户**: 拥有完全管理权限
+- **项目用户**: 仅能访问自己的数据库
+- **只读用户**: `readonly_user` - 只能查看所有数据库
+- **备份用户**: `backup_user` - 用于数据备份
+- **监控用户**: `monitor_user` - 用于性能监控
+
+## 性能优化
+
+MySQL 配置已经进行了优化：
+
+- **连接数**: 最大 200 个并发连接
+- **缓冲池**: 512MB InnoDB 缓冲池
+- **日志配置**: 启用慢查询日志 (>2秒)
+- **字符集**: UTF8MB4 支持完整的 Unicode
+- **时区**: 东八区 (+08:00)
+
+## 故障排除
+
+### 服务启动失败
+
+```bash
+# 查看详细日志
+./mysql-service.sh logs
+
+# 检查端口占用
+netstat -an | grep 3306
+
+# 重新创建服务
+./mysql-service.sh cleanup
+./mysql-service.sh start
+```
+
+### 网络冲突
+
+如果遇到网络冲突，修改 `docker-compose.yml` 中的子网配置：
+
+```yaml
+networks:
+  shared-mysql-network:
+    ipam:
+      config:
+        - subnet: 172.31.0.0/16  # 修改为不冲突的子网
+```
+
+### 连接问题
+
+```bash
+# 检查服务状态
+./mysql-service.sh status
+
+# 测试连接
+mysql -h localhost -P 3306 -u root -p
+
+# 检查用户权限
+./mysql-service.sh connect
+SHOW GRANTS FOR 'gallery_user'@'%';
+```
+
+## 升级和维护
+
+### 更新 MySQL 版本
+
+1. 停止服务: `./mysql-service.sh stop`
+2. 修改 `docker-compose.yml` 中的镜像版本
+3. 重新启动: `./mysql-service.sh start`
+
+### 定期维护
+
+```bash
+# 定期备份 (建议每日执行)
+./mysql-service.sh backup
+
+# 查看日志文件大小
+du -sh logs/
+
+# 清理旧的备份文件 (保留最近 7 天)
+find backups/ -name "*.sql" -mtime +7 -delete
+```
+
+## 支持的项目类型
+
+此 MySQL 服务支持任何需要 MySQL 数据库的项目：
+
+- **Web 应用**: PHP, Python, Node.js, Java, .NET
+- **移动应用后端**: REST API, GraphQL
+- **数据分析**: ETL 工具, BI 系统
+- **微服务**: Docker 容器化服务
+- **开发测试**: 本地开发环境
+
+## 联系和支持
+
+如需帮助，请参考：
+
+1. 查看服务日志: `./mysql-service.sh logs`
+2. 检查服务状态: `./mysql-service.sh status`
+3. 参考官方文档: [MySQL 8.0 Documentation](https://dev.mysql.com/doc/refman/8.0/)
+
+---
+
+**注意**: 此服务设计用于开发和测试环境。在生产环境使用前，请确保：
+- 修改默认密码
+- 配置防火墙规则
+- 设置 SSL/TLS 加密
+- 定期备份数据
+- 监控服务性能 

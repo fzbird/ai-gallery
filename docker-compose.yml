@@ -1,32 +1,25 @@
-services:
-  db:
-    image: mysql:8.0
-    container_name: mysql_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: fzbird20250615
-      MYSQL_DATABASE: gallerydb
-    volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    networks:
-      - gallery-network
+# 生产环境配置 - 只使用80端口，标准HTTP访问
+# 使用方法: 
+#   1. 先启动共享MySQL: docker-compose -f docker-compose.mysql.yml up -d
+#   2. 再启动生产环境: docker-compose -f docker-compose.prod.yml up -d
 
+services:
   backend:
     build: ./backend
     pull_policy: always
     container_name: gallery_backend
     restart: always
-    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
-    depends_on:
-      - db
+    environment:
+      # 数据库连接配置 - 连接到共享MySQL容器
+      - DATABASE_URL=mysql+pymysql://root:fzbird20250615@mysql_db:3306/gallery_db
     networks:
       - gallery-network
+      - shared-mysql-network
 
   frontend:
     build:
@@ -39,24 +32,16 @@ services:
     container_name: gallery_frontend
     restart: always
     ports:
-      # 开发/测试端口：http://localhost:3300
-      - "3300:80"
-      
-      # 生产/标准端口：http://localhost (反向代理模式)
+      # 生产环境使用标准HTTP端口
       - "80:80"
-      
-      # 说明：
-      # - 3300端口：适合开发和多项目环境，避免端口冲突
-      # - 80端口：标准HTTP端口，用户友好，适合生产环境
-      # - 两个端口指向同一个nginx容器，提供灵活的访问方式
+      - "3300:80"
     depends_on:
       - backend
     networks:
       - gallery-network
 
-volumes:
-  mysql_data:
-
 networks:
   gallery-network:
-    driver: bridge 
+    driver: bridge
+  shared-mysql-network:
+    external: true

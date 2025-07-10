@@ -1,21 +1,9 @@
 # 开发环境配置 - 只使用3300端口，避免端口冲突
-# 使用方法: docker-compose -f docker-compose.dev.yml up -d
+# 使用方法: 
+#   1. 先启动共享MySQL: docker-compose -f docker-compose.mysql.yml up -d
+#   2. 再启动开发环境: docker-compose -f docker-compose.dev.yml up -d
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql_db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: fzbird20250615
-      MYSQL_DATABASE: gallerydb
-    volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    networks:
-      - gallery-network
-
   backend:
     build: ./backend
     pull_policy: always
@@ -26,10 +14,12 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
-    depends_on:
-      - db
+    environment:
+      # 数据库连接配置 - 连接到共享MySQL容器
+      - DATABASE_URL=mysql+pymysql://root:fzbird20250615@mysql_db:3306/gallery_db
     networks:
       - gallery-network
+      - shared-mysql-network
 
   frontend:
     build:
@@ -49,9 +39,8 @@ services:
     networks:
       - gallery-network
 
-volumes:
-  mysql_data:
-
 networks:
   gallery-network:
-    driver: bridge 
+    driver: bridge
+  shared-mysql-network:
+    external: true

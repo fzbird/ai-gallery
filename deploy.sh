@@ -3,8 +3,57 @@
 # Gallery 自动部署脚本 - 多环境支持版本
 # 支持开发、生产、灵活三种部署模式
 
-echo "🚀 Gallery 自动部署脚本 v2.0"
+echo "🚀 Gallery 自动部署脚本 v3.0 - 共享MySQL版本"
 echo "=============================="
+
+# 检查共享MySQL数据库状态
+echo "🗄️  检查共享MySQL数据库状态..."
+MYSQL_CONTAINER_NAME="mysql_db"
+MYSQL_NETWORK_NAME="shared-mysql-network"
+
+if docker ps | grep -q "$MYSQL_CONTAINER_NAME"; then
+    echo "✅ 共享MySQL数据库正在运行"
+else
+    echo "❌ 共享MySQL数据库未运行"
+    echo ""
+    echo "请先启动共享MySQL数据库："
+    echo "  ./deploy_mysql.sh start"
+    echo ""
+    read -p "是否现在启动共享MySQL数据库？(y/n): " start_mysql
+    if [ "$start_mysql" = "y" ] || [ "$start_mysql" = "Y" ]; then
+        echo "🚀 启动共享MySQL数据库..."
+        if [ -f "deploy_mysql.sh" ]; then
+            chmod +x deploy_mysql.sh
+            ./deploy_mysql.sh start
+            if [ $? -eq 0 ]; then
+                echo "✅ 共享MySQL数据库启动成功"
+            else
+                echo "❌ 共享MySQL数据库启动失败"
+                exit 1
+            fi
+        else
+            echo "❌ 找不到MySQL部署脚本 deploy_mysql.sh"
+            exit 1
+        fi
+    else
+        echo "❌ 部署已取消，请先启动共享MySQL数据库"
+        exit 1
+    fi
+fi
+
+# 检查共享网络是否存在
+if docker network ls | grep -q "$MYSQL_NETWORK_NAME"; then
+    echo "✅ 共享MySQL网络 ($MYSQL_NETWORK_NAME) 存在"
+else
+    echo "⚠️  共享MySQL网络不存在，正在创建..."
+    docker network create "$MYSQL_NETWORK_NAME" --driver bridge
+    if [ $? -eq 0 ]; then
+        echo "✅ 共享MySQL网络创建成功"
+    else
+        echo "❌ 共享MySQL网络创建失败"
+        exit 1
+    fi
+fi
 
 # 检查和修复文件权限
 echo "🔧 检查文件权限..."
