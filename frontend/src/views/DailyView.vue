@@ -6,9 +6,20 @@ import { useGalleryStore } from '@/stores/gallery';
 import { storeToRefs } from 'pinia';
 import { NBreadcrumb, NBreadcrumbItem, NCard, NStatistic, NTime } from 'naive-ui';
 import GalleryGrid from '@/components/GalleryGrid.vue';
+import apiClient from '@/api/api.js';
 
 const galleryStore = useGalleryStore();
 const { galleries: allGalleries, isLoading, hasMore } = storeToRefs(galleryStore);
+
+// 每日统计数据
+const dailyStats = ref({
+  today_galleries: 0,
+  today_images: 0,
+  today_likes: 0,
+  today_bookmarks: 0
+});
+
+const isLoadingStats = ref(false);
 
 // 今日日期
 const today = computed(() => {
@@ -34,23 +45,36 @@ const todayGalleries = computed(() => {
   });
 });
 
-// 统计信息
-const todayStats = computed(() => {
-  return {
-    totalGalleries: todayGalleries.value.length,
-    totalImages: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.imageCount || 0), 0),
-    totalLikes: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.likesCount || 0), 0),
-    totalBookmarks: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.bookmarksCount || 0), 0)
-  };
-});
+// 获取每日统计数据
+async function fetchDailyStats() {
+  isLoadingStats.value = true;
+  try {
+    const response = await apiClient.get('/api/v1/admin/daily-stats');
+    dailyStats.value = response.data;
+  } catch (error) {
+    console.error('Error fetching daily stats:', error);
+    // 如果API调用失败，使用本地计算的统计数据作为后备
+    dailyStats.value = {
+      today_galleries: todayGalleries.value.length,
+      today_images: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.imageCount || 0), 0),
+      today_likes: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.likesCount || 0), 0),
+      today_bookmarks: todayGalleries.value.reduce((sum, gallery) => sum + (gallery.bookmarksCount || 0), 0)
+    };
+  } finally {
+    isLoadingStats.value = false;
+  }
+}
 
 function loadMore() {
   galleryStore.fetchGalleries(false);
 }
 
-onMounted(() => {
+onMounted(async () => {
   galleryStore.resetState();
-  galleryStore.fetchGalleries(true);
+  await Promise.all([
+    galleryStore.fetchGalleries(true),
+    fetchDailyStats()
+  ]);
 });
 </script>
 
@@ -81,10 +105,10 @@ onMounted(() => {
         <div class="today-stats">
           <n-card title="今日统计" class="stats-card">
             <div class="stats-grid">
-              <n-statistic label="新增图集" :value="todayStats.totalGalleries" />
-              <n-statistic label="新增图片" :value="todayStats.totalImages" />
-              <n-statistic label="获得点赞" :value="todayStats.totalLikes" />
-              <n-statistic label="获得收藏" :value="todayStats.totalBookmarks" />
+              <n-statistic label="新增图集" :value="dailyStats.today_galleries" />
+              <n-statistic label="新增图片" :value="dailyStats.today_images" />
+              <n-statistic label="获得点赞" :value="dailyStats.today_likes" />
+              <n-statistic label="获得收藏" :value="dailyStats.today_bookmarks" />
             </div>
           </n-card>
         </div>

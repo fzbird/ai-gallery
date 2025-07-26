@@ -344,3 +344,57 @@ def upload_logo(
         )
     finally:
         file.file.close() 
+
+
+@router.get("/daily-stats", response_model=Dict[str, Any])
+def get_daily_stats(
+    db: Session = Depends(get_db),
+    current_user: Optional[models.User] = Depends(dependencies.get_current_user_optional),
+):
+    """
+    Get daily statistics for today's content.
+    """
+    from datetime import datetime, date
+    from sqlalchemy import func
+    
+    today = date.today()
+    
+    # 今日新增图集数量
+    today_galleries = db.query(func.count(models.Gallery.id)).filter(
+        func.date(models.Gallery.created_at) == today
+    ).scalar()
+    
+    # 今日新增图片数量
+    today_images = db.query(func.count(models.Image.id)).filter(
+        func.date(models.Image.created_at) == today
+    ).scalar()
+    
+    # 今日获得的总点赞数（图集 + 图片）
+    today_gallery_likes = db.query(func.coalesce(func.sum(models.Gallery.likes_count), 0)).filter(
+        func.date(models.Gallery.created_at) == today
+    ).scalar()
+    
+    today_image_likes = db.query(func.coalesce(func.sum(models.Image.likes_count), 0)).filter(
+        func.date(models.Image.created_at) == today
+    ).scalar()
+    
+    total_today_likes = (today_gallery_likes or 0) + (today_image_likes or 0)
+    
+    # 今日获得的总收藏数（图集 + 图片）
+    today_gallery_bookmarks = db.query(func.coalesce(func.sum(models.Gallery.bookmarks_count), 0)).filter(
+        func.date(models.Gallery.created_at) == today
+    ).scalar()
+    
+    today_image_bookmarks = db.query(func.coalesce(func.sum(models.Image.bookmarks_count), 0)).filter(
+        func.date(models.Image.created_at) == today
+    ).scalar()
+    
+    total_today_bookmarks = (today_gallery_bookmarks or 0) + (today_image_bookmarks or 0)
+    
+    return {
+        "today_galleries": today_galleries or 0,
+        "today_images": today_images or 0,
+        "today_likes": total_today_likes,
+        "today_bookmarks": total_today_bookmarks,
+        "date": today.isoformat()
+    } 
