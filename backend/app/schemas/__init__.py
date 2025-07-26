@@ -16,8 +16,8 @@ from .department import (
     DepartmentDeletionCheck,
     UserReference,
 )
-from .gallery import Gallery, GalleryCreate, GalleryUpdate, GalleryWithImages, GalleryStats
-from .image import Image, ImageCreate, ImageUpdate
+from .image import Image, ImageCreate, ImageUpdate, ImageSimple
+from .gallery import Gallery, GalleryCreate, GalleryUpdate, GalleryWithImages, GalleryStats, GallerySimple
 from .link import Link, LinkCreate, LinkUpdate
 from .tag import Tag, TagCreate
 from .token import Token, TokenData, TokenPayload
@@ -38,6 +38,8 @@ from .user import (
 )
 
 # Rebuild models to resolve forward references
+Image.model_rebuild()
+ImageSimple.model_rebuild()
 Gallery.model_rebuild()
 GalleryWithImages.model_rebuild()
-Image.model_rebuild()
+GallerySimple.model_rebuild()
