@@ -646,10 +646,7 @@ onMounted(() => {
 }
 
 .images-display {
-  /* Default styles for all display modes */
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  /* 移除默认的grid设置，让子类控制 */
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
@@ -658,16 +655,19 @@ onMounted(() => {
 
 /* Specific styles for each view mode */
 .images-grid.extra-large-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
 }
 
 .images-grid.large-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 20px;
 }
 
 .images-grid.small-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
@@ -680,8 +680,8 @@ onMounted(() => {
 
 .slideshow-container {
   width: 100%;
-  height: 70vh; /* 使用视口高度的70% */
-  background: #f0f0f0;
+  height: 80vh; /* 增大到80vh以获得更大的显示区域 */
+  background: #000;
   border-radius: 12px;
   overflow: hidden;
   position: relative;
@@ -724,7 +724,7 @@ onMounted(() => {
   }
   
   .slideshow-container {
-    height: 60vh;
+    height: 75vh;
   }
 }
 
@@ -745,7 +745,7 @@ onMounted(() => {
   }
   
   .images-grid.extra-large-grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
     gap: 16px;
   }
   
@@ -760,7 +760,7 @@ onMounted(() => {
   }
   
   .slideshow-container {
-    height: 50vh;
+    height: 60vh;
   }
 }
 
@@ -785,7 +785,7 @@ onMounted(() => {
   }
   
   .images-grid.large-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: 1fr;
     gap: 8px;
   }
   
@@ -795,7 +795,7 @@ onMounted(() => {
   }
   
   .slideshow-container {
-    height: 40vh;
+    height: 50vh;
   }
 }
 </style> 

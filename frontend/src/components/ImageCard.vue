@@ -130,7 +130,7 @@ async function handleDeleteImage() {
 
 .image {
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
 }

@@ -264,6 +264,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
 }
 
 .slide img {
@@ -273,6 +274,7 @@ onBeforeUnmount(() => {
   height: auto;
   object-fit: contain;
   background: #000;
+  border-radius: 8px;
 }
 
 .slide-overlay {
