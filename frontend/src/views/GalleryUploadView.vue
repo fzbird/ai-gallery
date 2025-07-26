@@ -39,12 +39,18 @@
                 
                 <n-form-item path="files">
                   <n-upload
+                    :key="uploadKey"
                     multiple
                     directory-dnd
                     :default-upload="false"
+                    v-model:file-list="uploadFileList"
                     @change="handleFileChange"
                     :show-file-list="false"
                     :accept="acceptAttribute"
+                    :max="100"
+                    :disabled="false"
+                    :show-preview-button="false"
+                    :show-remove-button="false"
                     class="custom-upload"
                   >
                     <n-upload-dragger class="upload-dragger">
@@ -265,7 +271,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useGalleryStore } from '@/stores/gallery';
 import { useCategoryStore } from '@/stores/category';
 import { useTopicStore } from '@/stores/topic';
@@ -295,6 +301,7 @@ const { setTitle, clearCustomTitle } = usePageTitle();
 
 const formRef = ref(null);
 const fileList = ref([]);
+const uploadFileList = ref([]); // n-upload组件的内部文件列表
 const model = reactive({
   title: '',
   description: '',
@@ -304,6 +311,7 @@ const model = reactive({
 });
 const isLoading = ref(false);
 const isHashing = ref(false);
+const uploadKey = ref(0); // 用于强制n-upload重新渲染
 
 // 拖拽相关状态
 const draggedIndex = ref(-1);
@@ -357,7 +365,11 @@ const supportedFormatsText = computed(() => {
 
 // 生成accept属性
 const acceptAttribute = computed(() => {
-  return allowedExtensions.value.join(',') + ',image/*';
+  const extensions = allowedExtensions.value.join(',');
+  const mimeTypes = allowedImageTypes.value.join(',');
+  const accept = `${extensions},${mimeTypes},image/*`;
+  console.log('Accept attribute:', accept);
+  return accept;
 });
 
 const rules = {
@@ -406,6 +418,15 @@ const validateFileType = (file) => {
   
   const hasValidExtension = allowedExtensions.value.some(ext => fileName.endsWith(ext));
   const hasValidMimeType = allowedImageTypes.value.includes(fileType);
+  
+  console.log('File type validation:', {
+    fileName,
+    fileType,
+    allowedExtensions: allowedExtensions.value,
+    allowedImageTypes: allowedImageTypes.value,
+    hasValidExtension,
+    hasValidMimeType
+  });
   
   return hasValidExtension || hasValidMimeType;
 };
@@ -462,6 +483,17 @@ const getProgressStatus = (status) => {
 // 移除文件
 const removeFile = (index) => {
   fileList.value.splice(index, 1);
+  // 同步更新n-upload组件的内部文件列表
+  uploadFileList.value = uploadFileList.value.filter((_, i) => i !== index);
+  // 强制重新渲染上传组件，确保n-upload内部状态同步
+  uploadKey.value++;
+  console.log('File removed, uploadKey incremented to:', uploadKey.value);
+};
+
+// 重置上传组件
+const resetUploadComponent = () => {
+  uploadKey.value++;
+  console.log('Upload component reset, new key:', uploadKey.value);
 };
 
 // 拖拽处理函数
@@ -517,10 +549,20 @@ const handleDragEnd = () => {
 
 // 处理文件选择
 const handleFileChange = async (data) => {
+  console.log('=== handleFileChange START ===');
+  console.log('handleFileChange triggered with:', data.fileList.length, 'files');
+  console.log('Current fileList length before change:', fileList.value.length);
+  console.log('Data fileList:', data.fileList.map(f => ({ name: f.name, size: f.file?.size, type: f.file?.type })));
+  console.log('UploadFileList length:', uploadFileList.value.length);
+  
   // 过滤出有效的图片文件
   const validFiles = data.fileList.filter(file => {
+    console.log('Processing file:', file.name, 'type:', file.file?.type, 'size:', file.file?.size);
+    
     const isValidType = validateFileType(file.file);
     const isValidSize = validateFileSize(file.file);
+    
+    console.log('File validation:', file.name, 'isValidType:', isValidType, 'isValidSize:', isValidSize);
     
     if (!isValidType) {
       message.warning(`文件 "${file.name}" 不是支持的图片格式，已跳过`);
@@ -534,6 +576,8 @@ const handleFileChange = async (data) => {
     
     return true;
   });
+
+  console.log('Valid files after filtering:', validFiles.length);
 
   if (validFiles.length === 0 && data.fileList.length > 0) {
     message.error('请选择有效的图片文件！支持格式：' + supportedFormatsText.value);
@@ -556,7 +600,10 @@ const handleFileChange = async (data) => {
     });
   }
 
+  // 更新我们的文件列表
   fileList.value = newFiles;
+  console.log('fileList updated, new length:', fileList.value.length);
+  console.log('=== handleFileChange END ===');
 
   if (validFiles.length > 0) {
     message.success(`已选择 ${validFiles.length} 个有效图片文件`);
@@ -779,6 +826,13 @@ onMounted(async () => {
   }
   
   await Promise.all(loadTasks);
+});
+
+// 组件卸载时清理状态
+onBeforeUnmount(() => {
+  fileList.value = [];
+  uploadKey.value = 0;
+  console.log('GalleryUploadView component unmounted, state cleared');
 });
 
 // 组件卸载时清理标题

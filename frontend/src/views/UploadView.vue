@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { useImageStore } from '@/stores/image';
 import { useCategoryStore } from '@/stores/category';
 import { useTopicStore } from '@/stores/topic';
@@ -22,6 +22,7 @@ const { setTitle, clearCustomTitle } = usePageTitle();
 
 const formRef = ref(null);
 const fileList = ref([]);
+const uploadFileList = ref([]); // n-upload组件的内部文件列表
 const model = reactive({
   title: '',
   description: '',
@@ -31,6 +32,7 @@ const model = reactive({
 });
 const isLoading = ref(false);
 const isHashing = ref(false);
+const uploadKey = ref(0); // 用于强制n-upload重新渲染
 
 // 从系统设置获取的动态参数
 const systemSettings = computed(() => settingsStore.settings || {});
@@ -136,6 +138,9 @@ const formatFileSize = (bytes) => {
 };
 
 const handleFileChange = (data) => {
+  console.log('handleFileChange triggered with:', data.fileList.length, 'files');
+  console.log('Current fileList length before change:', fileList.value.length);
+  
   // 过滤出有效的图片文件
   const validFiles = data.fileList.filter(file => {
     const isValidType = validateFileType(file.file);
@@ -159,6 +164,7 @@ const handleFileChange = (data) => {
     return;
   }
 
+  // 完全替换文件列表，而不是追加
   fileList.value = validFiles.map(file => ({
     id: file.id,
     name: file.name,
@@ -167,6 +173,8 @@ const handleFileChange = (data) => {
     percentage: 0,
     hash: null
   }));
+
+  console.log('fileList updated, new length:', fileList.value.length);
 
   if (validFiles.length > 0) {
     message.success(`已选择 ${validFiles.length} 个有效图片文件`);
@@ -323,6 +331,13 @@ onMounted(async () => {
   await Promise.all(loadTasks);
 });
 
+// 组件卸载时清理状态
+onBeforeUnmount(() => {
+  fileList.value = [];
+  uploadKey.value = 0;
+  console.log('UploadView component unmounted, state cleared');
+});
+
 // 组件卸载时清理标题
 watch(() => router.currentRoute.value.name, () => {
   if (router.currentRoute.value.name !== 'Upload') {
@@ -371,12 +386,15 @@ watch(() => router.currentRoute.value.name, () => {
                 
                 <n-form-item path="files">
                   <n-upload
+                    :key="uploadKey"
                     multiple
                     directory-dnd
                     :default-upload="false"
+                    v-model:file-list="uploadFileList"
                     @change="handleFileChange"
                     :show-file-list="false"
                     :accept="acceptAttribute"
+                    :max="100"
                     class="custom-upload"
                   >
                     <n-upload-dragger class="upload-dragger">

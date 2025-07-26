@@ -124,30 +124,41 @@
             
             <!-- 新图片上传区域 -->
             <div class="upload-area">
+              <!-- 原生文件输入 -->
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*"
+                @change="handleNativeFileSelect"
+                style="display: none;"
+                ref="nativeFileInput"
+              />
+              
+              <!-- 主要上传按钮 -->
+              <n-button @click="triggerNativeFileSelect" type="primary" size="large" class="upload-btn">
+                <template #icon>
+                  <n-icon><CloudUploadOutline /></n-icon>
+                </template>
+                选择图片文件
+              </n-button>
+              
+              <p class="upload-hint">支持多选，可同时选择多个图片文件</p>
+              
+              <!-- 隐藏的Naive UI上传组件，仅用于兼容性 -->
               <n-upload
+                :key="uploadKey"
                 multiple
-                directory-dnd
                 :default-upload="false"
+                v-model:file-list="uploadFileList"
                 @change="handleNewFileChange"
+                @select="handleFileSelect"
                 :show-file-list="false"
                 :accept="acceptAttribute"
+                :max="100"
+                :disabled="true"
+                style="display: none;"
                 class="custom-upload"
               >
-                <n-upload-dragger class="upload-dragger">
-                  <div class="upload-content">
-                    <div class="upload-icon-wrapper">
-                      <n-icon size="48" class="upload-icon">
-                        <CloudUploadOutline />
-                      </n-icon>
-                    </div>
-                    <div class="upload-text">
-                      <h4>添加新图片</h4>
-                      <p class="upload-hint">
-                        支持拖拽上传，或点击选择文件
-                      </p>
-                    </div>
-                  </div>
-                </n-upload-dragger>
               </n-upload>
             </div>
             
@@ -302,7 +313,11 @@ const formRef = ref(null);
 const isLoading = ref(false);
 const existingImages = ref([]);
 const newFileList = ref([]);
+const uploadFileList = ref([]); // n-upload组件的内部文件列表
+const nativeFileInput = ref(null); // 原生文件输入引用
 const draggedIndex = ref(-1);
+const uploadKey = ref(0); // 用于强制n-upload重新渲染，防止重复文件
+const isProcessingFiles = ref(false); // 防止重复处理文件
 
 // 表单数据
 const formModel = reactive({
@@ -345,17 +360,47 @@ const allowedFileTypes = computed(() => {
   return types.split(',').map(type => type.trim().toLowerCase());
 });
 const allowedExtensions = computed(() => allowedFileTypes.value.map(type => `.${type}`));
-const acceptAttribute = computed(() => allowedExtensions.value.join(',') + ',image/*');
+const acceptAttribute = computed(() => {
+  const extensions = allowedExtensions.value.join(',');
+  const mimeTypes = allowedFileTypes.value.map(type => {
+    const mimeMap = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'bmp': 'image/bmp',
+      'tiff': 'image/tiff',
+      'svg': 'image/svg+xml'
+    };
+    return mimeMap[type];
+  }).filter(Boolean).join(',');
+  const accept = `${extensions},${mimeTypes},image/*`;
+  console.log('GalleryEditModal Accept attribute:', accept);
+  return accept;
+});
 const maxFileSize = computed(() => parseInt(systemSettings.value.max_upload_size) || (50 * 1024 * 1024));
 
 // 监听显示状态
 watch(() => props.visible, (newVal) => {
   if (newVal) {
+    console.log('Modal opened, initializing...');
     initModal();
   } else {
+    console.log('Modal closed, resetting...');
     resetModal();
   }
 });
+
+// 监听uploadFileList的变化
+watch(uploadFileList, (newFileList, oldFileList) => {
+  console.log('uploadFileList changed:', {
+    newLength: newFileList.length,
+    oldLength: oldFileList?.length || 0,
+    newFiles: newFileList.map(f => f.name),
+    oldFiles: oldFileList?.map(f => f.name) || []
+  });
+}, { deep: true });
 
 // 初始化模态窗口
 async function initModal() {
@@ -383,6 +428,12 @@ async function initModal() {
             image_url: img.image_url || `${API_BASE_URL()}${img.image_url}`,
     isDragging: false
   }));
+  
+  // 重置新文件列表和上传组件状态
+  newFileList.value = [];
+  uploadFileList.value = [];
+  uploadKey.value++;
+  isProcessingFiles.value = false;
 }
 
 // 重置模态窗口
@@ -396,7 +447,10 @@ function resetModal() {
   });
   existingImages.value = [];
   newFileList.value = [];
+  uploadFileList.value = []; // 重置n-upload组件的内部文件列表
   draggedIndex.value = -1;
+  uploadKey.value++; // 重置上传组件的key
+  isProcessingFiles.value = false; // 重置文件处理状态
 }
 
 // 加载必要的Store数据
@@ -485,55 +539,183 @@ async function removeExistingImage(imageId, index) {
   }
 }
 
+// 处理文件选择事件
+function handleFileSelect(data) {
+  console.log('=== handleFileSelect START ===');
+  console.log('File select triggered with:', data.fileList.length, 'files');
+  console.log('Selected files:', data.fileList.map(f => ({ name: f.name, size: f.file?.size, type: f.file?.type })));
+  console.log('=== handleFileSelect END ===');
+}
+
+// 处理原生文件选择
+async function handleNativeFileSelect(event) {
+  console.log('=== handleNativeFileSelect START ===');
+  console.log('Native file select triggered with:', event.target.files.length, 'files');
+  console.log('Selected files:', Array.from(event.target.files).map(f => ({ name: f.name, size: f.size, type: f.type })));
+  
+  try {
+    // 过滤出有效的图片文件
+    const validFiles = Array.from(event.target.files).filter(file => {
+      console.log('Processing file:', file.name, 'type:', file.type, 'size:', file.size);
+      
+      const isValidType = validateFileType(file);
+      const isValidSize = validateFileSize(file);
+      
+      console.log('File validation:', file.name, 'isValidType:', isValidType, 'isValidSize:', isValidSize);
+      
+      if (!isValidType) {
+        message.warning(`文件 "${file.name}" 不是支持的图片格式，已跳过`);
+        return false;
+      }
+      
+      if (!isValidSize) {
+        message.warning(`文件 "${file.name}" 超过大小限制，已跳过`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    console.log('Valid files after filtering:', validFiles.length);
+
+    if (validFiles.length === 0 && event.target.files.length > 0) {
+      message.error('请选择有效的图片文件！');
+      return;
+    }
+
+    // 创建文件项并生成预览
+    const newFiles = [];
+    for (const file of validFiles) {
+      const preview = await createFilePreview(file);
+      const uniqueId = `${file.name}_${file.size}_${file.lastModified}_${Date.now()}_${Math.random()}`;
+      newFiles.push({
+        id: uniqueId,
+        name: file.name,
+        file: file,
+        preview,
+        status: 'pending',
+        hash: null
+      });
+    }
+
+    // 更新文件列表
+    newFileList.value = newFiles;
+    console.log('Native file list processed, newFileList length:', newFileList.value.length);
+    
+    // 强制重新渲染上传组件
+    uploadKey.value++;
+    
+    if (validFiles.length > 0) {
+      message.success(`已选择 ${validFiles.length} 个新图片文件`);
+    }
+    
+    console.log('=== handleNativeFileSelect END ===');
+  } catch (error) {
+    console.error('Error processing native file selection:', error);
+    message.error('处理文件选择时发生错误');
+  } finally {
+    // 清空文件输入，允许重复选择相同文件
+    event.target.value = '';
+  }
+}
+
 // 处理新文件上传
 async function handleNewFileChange(data) {
-  // 过滤掉已存在的文件（基于文件名和大小）
-  const validFiles = data.fileList.filter(file => {
-    // 检查是否已经存在相同的文件
-    const isDuplicate = newFileList.value.some(existingFile => 
-      existingFile.name === file.name && 
-      existingFile.file.size === file.file.size
-    );
-    
-    if (isDuplicate) {
-      message.warning(`文件 "${file.name}" 已经在上传列表中，已跳过`);
-      return false;
-    }
-    
-    const isValidType = validateFileType(file.file);
-    const isValidSize = validateFileSize(file.file);
-    
-    if (!isValidType) {
-      message.warning(`文件 "${file.name}" 不是支持的图片格式，已跳过`);
-      return false;
-    }
-    
-    if (!isValidSize) {
-      message.warning(`文件 "${file.name}" 超过大小限制，已跳过`);
-      return false;
-    }
-    
-    return true;
-  });
-
-  // 创建文件项并生成预览
-  const newFiles = [];
-  for (const file of validFiles) {
-    const preview = await createFilePreview(file.file);
-    newFiles.push({
-      id: file.id || Date.now() + Math.random(),
-      name: file.name,
-      file: file.file,
-      preview,
-      status: 'pending',
-      hash: null
+  console.log('=== handleNewFileChange START ===');
+  console.log('handleNewFileChange triggered with:', data.fileList.length, 'files');
+  console.log('Current newFileList length before change:', newFileList.value.length);
+  console.log('Data fileList:', data.fileList.map(f => ({ name: f.name, size: f.file?.size, type: f.file?.type })));
+  console.log('UploadFileList length:', uploadFileList.value.length);
+  console.log('isProcessingFiles:', isProcessingFiles.value);
+  console.log('uploadKey:', uploadKey.value);
+  
+  // 检查文件数量是否有变化
+  const fileCountChanged = data.fileList.length !== newFileList.value.length;
+  console.log('File count changed:', fileCountChanged, 'data.fileList.length:', data.fileList.length, 'newFileList.value.length:', newFileList.value.length);
+  
+  // 只有在处理中且文件数量没有变化时才跳过
+  if (isProcessingFiles.value && !fileCountChanged) {
+    console.log('File processing already in progress and file count unchanged, skipping...');
+    return;
+  }
+  
+  isProcessingFiles.value = true;
+  
+  try {
+    // 过滤出有效的图片文件
+    const validFiles = data.fileList.filter(file => {
+      console.log('Processing file:', file.name, 'type:', file.file?.type, 'size:', file.file?.size);
+      
+      const isValidType = validateFileType(file.file);
+      const isValidSize = validateFileSize(file.file);
+      
+      console.log('File validation:', file.name, 'isValidType:', isValidType, 'isValidSize:', isValidSize);
+      
+      if (!isValidType) {
+        message.warning(`文件 "${file.name}" 不是支持的图片格式，已跳过`);
+        return false;
+      }
+      
+      if (!isValidSize) {
+        message.warning(`文件 "${file.name}" 超过大小限制，已跳过`);
+        return false;
+      }
+      
+      return true;
     });
-  }
 
-  newFileList.value.push(...newFiles);
-  if (validFiles.length > 0) {
-    message.success(`已选择 ${validFiles.length} 个新图片文件`);
+    console.log('Valid files after filtering:', validFiles.length);
+
+    if (validFiles.length === 0 && data.fileList.length > 0) {
+      message.error('请选择有效的图片文件！');
+      return;
+    }
+
+    // 创建文件项并生成预览
+    const newFiles = [];
+    for (const file of validFiles) {
+      const preview = await createFilePreview(file.file);
+      const uniqueId = `${file.name}_${file.file.size}_${file.file.lastModified}_${Date.now()}_${Math.random()}`;
+      newFiles.push({
+        id: uniqueId,
+        name: file.name,
+        file: file.file,
+        preview,
+        status: 'pending',
+        hash: null
+      });
+    }
+
+    // 直接替换文件列表（处理累积的文件列表）
+    newFileList.value = newFiles;
+    console.log('newFileList replaced, new length:', newFileList.value.length);
+    
+    // 强制重新渲染上传组件
+    uploadKey.value++;
+    console.log('UploadKey incremented to:', uploadKey.value);
+    
+    if (validFiles.length > 0) {
+      message.success(`已选择 ${validFiles.length} 个新图片文件`);
+    }
+    
+    console.log('=== handleNewFileChange END ===');
+  } finally {
+    // 延迟重置处理状态，给Naive UI组件时间完成内部状态更新
+    setTimeout(() => {
+      isProcessingFiles.value = false;
+      console.log('File processing state reset after delay');
+    }, 200);
   }
+}
+
+// 处理文件上传前的验证
+function handleBeforeUpload(data) {
+  console.log('=== handleBeforeUpload START ===');
+  console.log('beforeUpload triggered with:', data.fileList.length, 'files');
+  console.log('Files:', data.fileList.map(f => ({ name: f.name, size: f.file?.size, type: f.file?.type })));
+  
+  // 返回 false 阻止默认上传行为，我们会在 change 事件中处理
+  return false;
 }
 
 // 验证文件类型
@@ -543,6 +725,14 @@ function validateFileType(file) {
   
   const hasValidExtension = allowedExtensions.value.some(ext => fileName.endsWith(ext));
   const hasValidMimeType = file.type.startsWith('image/');
+  
+  console.log('GalleryEditModal File type validation:', {
+    fileName,
+    fileType,
+    allowedExtensions: allowedExtensions.value,
+    hasValidExtension,
+    hasValidMimeType
+  });
   
   return hasValidExtension || hasValidMimeType;
 }
@@ -569,6 +759,11 @@ function createFilePreview(file) {
 // 删除新文件
 function removeNewFile(index) {
   newFileList.value.splice(index, 1);
+  // 同步更新n-upload组件的内部文件列表
+  uploadFileList.value = uploadFileList.value.filter((_, i) => i !== index);
+  // 强制重新渲染上传组件，确保状态同步
+  uploadKey.value++;
+  console.log('GalleryEditModal: File removed, uploadKey incremented to:', uploadKey.value);
 }
 
 // 取消操作
@@ -706,6 +901,15 @@ function setCoverImage(index) {
   existingImages.value.unshift(selectedImage);
   
   message.success('封面图片已更新');
+}
+
+// 触发原生文件选择器
+function triggerNativeFileSelect() {
+  if (nativeFileInput.value) {
+    nativeFileInput.value.click();
+  } else {
+    console.warn('Native file input element not found.');
+  }
 }
 
 onMounted(() => {
@@ -907,54 +1111,27 @@ onMounted(() => {
 
 /* 上传区域 */
 .upload-area {
-  margin-bottom: 16px;
-}
-
-.custom-upload {
-  width: 100%;
-}
-
-.upload-dragger {
-  border: 2px dashed #d1d5db;
-  border-radius: 8px;
-  background: #f9fafb;
-  transition: all 0.3s ease;
-  min-height: 120px;
-}
-
-.upload-dragger:hover {
-  border-color: #10b981;
-  background: #f0fdf4;
-}
-
-.upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
   text-align: center;
+  padding: 20px;
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
 }
 
-.upload-icon-wrapper {
-  margin-bottom: 8px;
+.upload-area:hover {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
 }
 
-.upload-icon {
-  color: #10b981;
-}
-
-.upload-text h4 {
-  margin: 0 0 4px 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
+.upload-btn {
+  margin-bottom: 10px;
 }
 
 .upload-hint {
+  color: #666;
+  font-size: 14px;
   margin: 0;
-  color: #6b7280;
-  font-size: 12px;
 }
 
 /* 新文件列表 */
