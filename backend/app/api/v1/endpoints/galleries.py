@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -59,6 +59,75 @@ def _add_image_urls_to_gallery(gallery):
     # 处理封面图片
     if hasattr(gallery, 'cover_image') and gallery.cover_image:
         _add_image_url_to_image(gallery.cover_image)
+
+def _map_gallery_to_schema(db: Session, gallery: models.Gallery, user_id: Optional[int] = None) -> schemas.GalleryWithImages:
+    """
+    映射图集数据库对象到Pydantic schema对象，避免循环引用
+    """
+    if not gallery:
+        return None
+
+    # 创建基础 schema 对象
+    gallery_schema = schemas.GalleryWithImages.model_validate(gallery)
+
+    # 处理图片信息，使用简化的图片schema
+    if hasattr(gallery, 'images') and gallery.images:
+        simplified_images = []
+        for image in gallery.images:
+            # 为图片添加URL
+            _add_image_url_to_image(image)
+            
+            # 创建简化的图片schema
+            image_simple = schemas.ImageSimple(
+                id=image.id,
+                title=image.title,
+                description=image.description,
+                filename=image.filename,
+                image_url=image.image_url,
+                created_at=image.created_at,
+                owner_id=image.owner_id,
+                owner=image.owner,
+                ai_status=image.ai_status,
+                ai_description=image.ai_description,
+                ai_tags=image.ai_tags,
+                tags=image.tags,
+                category=image.category,
+                likes_count=image.likes_count or 0,
+                bookmarks_count=image.bookmarks_count or 0,
+                views_count=image.views_count or 0,
+                liked_by_current_user=False,  # 在简化版本中不包含用户交互信息
+                bookmarked_by_current_user=False,
+                is_cover_image=image.id == gallery.cover_image_id if gallery.cover_image_id else False
+            )
+            simplified_images.append(image_simple)
+        gallery_schema.images = simplified_images
+
+    # 处理封面图片
+    if hasattr(gallery, 'cover_image') and gallery.cover_image:
+        _add_image_url_to_image(gallery.cover_image)
+        gallery_schema.cover_image = schemas.ImageSimple(
+            id=gallery.cover_image.id,
+            title=gallery.cover_image.title,
+            description=gallery.cover_image.description,
+            filename=gallery.cover_image.filename,
+            image_url=gallery.cover_image.image_url,
+            created_at=gallery.cover_image.created_at,
+            owner_id=gallery.cover_image.owner_id,
+            owner=gallery.cover_image.owner,
+            ai_status=gallery.cover_image.ai_status,
+            ai_description=gallery.cover_image.ai_description,
+            ai_tags=gallery.cover_image.ai_tags,
+            tags=gallery.cover_image.tags,
+            category=gallery.cover_image.category,
+            likes_count=gallery.cover_image.likes_count or 0,
+            bookmarks_count=gallery.cover_image.bookmarks_count or 0,
+            views_count=gallery.cover_image.views_count or 0,
+            liked_by_current_user=False,
+            bookmarked_by_current_user=False,
+            is_cover_image=True
+        )
+
+    return gallery_schema
 
 @router.get("/feed", response_model=List[schemas.GalleryWithImages])
 def read_gallery_feed(
@@ -315,10 +384,9 @@ def read_gallery(
         setattr(gallery, 'liked_by_current_user', False)
         setattr(gallery, 'bookmarked_by_current_user', False)
     
-    # 为图片添加image_url字段
-    _add_image_urls_to_gallery(gallery)
-    
-    return gallery
+    # 使用新的映射函数，避免循环引用
+    user_id = current_user.id if current_user else None
+    return _map_gallery_to_schema(db, gallery, user_id)
 
 @router.put("/{gallery_id}", response_model=schemas.Gallery)
 def update_gallery(

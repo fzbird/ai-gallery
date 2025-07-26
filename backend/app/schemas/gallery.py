@@ -8,7 +8,7 @@ from .category import Category
 from .user import UserSimple
 
 if TYPE_CHECKING:
-    from .image import Image
+    from .image import ImageSimple
     from .comment import Comment
 
 class GalleryStats(BaseModel):
@@ -17,6 +17,21 @@ class GalleryStats(BaseModel):
     draft_galleries: int
     total_images: int
     top_liked_galleries: List[Dict[str, Any]] = []
+
+# --- 简化的图集Schema，用于在图片中引用，避免循环引用 ---
+class GallerySimple(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    created_at: datetime
+    owner_id: int
+    owner: UserSimple
+    image_count: int = 0
+    views_count: int = 0
+    likes_count: int = 0
+    bookmarks_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Base Schema ---
 class GalleryBase(BaseModel):
@@ -46,8 +61,8 @@ class Gallery(GalleryBase):
     owner: UserSimple
     category: Optional[Category] = None
     tags: List[Tag] = []
-    images: List["Image"] = []
-    cover_image: Optional["Image"] = None
+    images: List["ImageSimple"] = []
+    cover_image: Optional["ImageSimple"] = None
     comments: List["Comment"] = []
     image_count: int = 0
     views_count: int = 0
@@ -60,5 +75,5 @@ class Gallery(GalleryBase):
 
 # --- Gallery with Images ---
 class GalleryWithImages(Gallery):
-    images: List["Image"] = []
+    images: List["ImageSimple"] = []
     comments: List["Comment"] = [] 

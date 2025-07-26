@@ -107,6 +107,23 @@ def _map_image_to_schema(db: Session, image: models.Image, user_id: Optional[int
     is_cover = db.query(Gallery).filter(Gallery.cover_image_id == image.id).first()
     image_schema.is_cover_image = is_cover is not None
 
+    # 4. 处理图集信息，避免循环引用
+    if hasattr(image, 'gallery') and image.gallery:
+        # 创建简化的图集schema，只包含必要信息
+        gallery_simple = schemas.GallerySimple(
+            id=image.gallery.id,
+            title=image.gallery.title,
+            description=image.gallery.description,
+            created_at=image.gallery.created_at,
+            owner_id=image.gallery.owner_id,
+            owner=image.gallery.owner,
+            image_count=image.gallery.image_count or 0,
+            views_count=image.gallery.views_count or 0,
+            likes_count=image.gallery.likes_count or 0,
+            bookmarks_count=image.gallery.bookmarks_count or 0
+        )
+        image_schema.gallery = gallery_simple
+
     return image_schema
 
 @router.post("/", response_model=schemas.Image)
