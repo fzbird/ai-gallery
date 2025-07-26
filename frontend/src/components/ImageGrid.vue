@@ -52,25 +52,29 @@ function canDeleteImage(image) {
 
 <style scoped>
 .image-grid {
-  column-count: 4;
-  column-gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
 }
 
 @media (max-width: 1200px) {
   .image-grid {
-    column-count: 3;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
   }
 }
 
 @media (max-width: 768px) {
   .image-grid {
-    column-count: 2;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
   }
 }
 
 @media (max-width: 480px) {
   .image-grid {
-    column-count: 1;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 </style> 
