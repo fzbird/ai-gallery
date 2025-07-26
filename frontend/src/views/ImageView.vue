@@ -5,10 +5,10 @@ import { useImageStore } from '@/stores/image';
 import { useAuthStore } from '@/stores/auth';
 import { usePageTitle } from '@/utils/page-title';
 import { storeToRefs } from 'pinia';
-import { NCard, NImage, NSpace, NTag, NButton, NIcon, NSpin, NResult, useMessage } from 'naive-ui';
+import { NCard, NImage, NSpace, NTag, NButton, NIcon, NSpin, NResult, useMessage, NBreadcrumb, NBreadcrumbItem } from 'naive-ui';
 import { 
   Heart, HeartOutline, Bookmark, BookmarkOutline, DownloadOutline,
-  PersonOutline, FolderOutline, TimeOutline, EyeOutline, ExpandOutline
+  PersonOutline, FolderOutline, TimeOutline, EyeOutline, ExpandOutline, ImagesOutline
 } from '@vicons/ionicons5';
 import CommentsSection from '@/components/CommentsSection.vue';
 import AppFooter from '@/components/AppFooter.vue';
@@ -130,6 +130,19 @@ function formatDate(dateString) {
 
     <!-- Image content -->
     <div v-else-if="currentImage" class="image-page">
+      <!-- 面包屑导航 -->
+      <div class="breadcrumb-container">
+        <div class="container">
+          <n-breadcrumb class="breadcrumb">
+            <n-breadcrumb-item @click="$router.push('/')">首页</n-breadcrumb-item>
+            <n-breadcrumb-item v-if="currentImage.gallery" @click="$router.push(`/galleries/${currentImage.gallery.id}`)">
+              {{ currentImage.gallery.title }}
+            </n-breadcrumb-item>
+            <n-breadcrumb-item>{{ currentImage.title }}</n-breadcrumb-item>
+          </n-breadcrumb>
+        </div>
+      </div>
+
       <!-- Image header banner -->
       <div class="image-banner">
         <div class="banner-content">
@@ -145,6 +158,10 @@ function formatDate(dateString) {
               <span class="meta-item" v-if="currentImage.category">
                 <n-icon><FolderOutline /></n-icon>
                 {{ currentImage.category.name }}
+              </span>
+              <span class="meta-item" v-if="currentImage.gallery">
+                <n-icon><ImagesOutline /></n-icon>
+                {{ currentImage.gallery.title }}
               </span>
               <span class="meta-item">
                 <n-icon><TimeOutline /></n-icon>
@@ -554,8 +571,49 @@ function formatDate(dateString) {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* 面包屑导航样式 */
+.breadcrumb-container {
+  background-color: #f8fafc;
+  padding: 16px 0;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.breadcrumb {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.breadcrumb :deep(.n-breadcrumb-item__link) {
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb :deep(.n-breadcrumb-item__link:hover) {
+  color: #3b82f6;
+}
+
+.breadcrumb :deep(.n-breadcrumb-item__separator) {
+  color: #9ca3af;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .breadcrumb-container {
+    padding: 12px 0;
+  }
+  
+  .breadcrumb {
+    padding: 0 16px;
+  }
+  
+  .breadcrumb :deep(.n-breadcrumb-item__link) {
+    font-size: 13px;
+  }
+  
   .image-banner {
     min-height: 220px; /* 大幅减少banner高度 */
     padding: 20px 0;
@@ -637,6 +695,18 @@ function formatDate(dateString) {
 
 /* 超小屏幕进一步优化 */
 @media (max-width: 480px) {
+  .breadcrumb-container {
+    padding: 8px 0;
+  }
+  
+  .breadcrumb {
+    padding: 0 12px;
+  }
+  
+  .breadcrumb :deep(.n-breadcrumb-item__link) {
+    font-size: 12px;
+  }
+  
   .image-banner {
     min-height: 180px; /* 超小屏幕进一步减少高度 */
     padding: 16px 0;

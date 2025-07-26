@@ -9,6 +9,7 @@ from .user import UserSimple
 
 if TYPE_CHECKING:
     from .comment import Comment
+    from .gallery import Gallery
 
 # --- Base Schema ---
 class ImageBase(BaseModel):
@@ -42,6 +43,7 @@ class Image(ImageBase):
     ai_tags: Optional[List[Any]] = None
     tags: List[Tag] = []
     category: Optional[Category] = None
+    gallery: Optional["Gallery"] = None
     likes_count: int = Field(0, alias='likes_count')
     bookmarks_count: int = Field(0, alias='bookmarks_count')
     views_count: int = Field(0, alias='views_count')

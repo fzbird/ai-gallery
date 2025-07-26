@@ -270,7 +270,7 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
         return db_image
 
     def get_with_relations(self, db: Session, *, id: int) -> Optional[Image]:
-        """获取图片及其关系数据（点赞、收藏、所有者等）"""
+        """获取图片及其关系数据（点赞、收藏、所有者、图集等）"""
         from sqlalchemy.orm import joinedload, selectinload
         return (
             db.query(self.model)
@@ -280,6 +280,7 @@ class CRUDImage(CRUDBase[Image, ImageCreate, ImageUpdate]):
                 joinedload(self.model.owner),
                 joinedload(self.model.category),
                 joinedload(self.model.tags),
+                joinedload(self.model.gallery),
                 selectinload(self.model.comments).joinedload(Comment.owner)
             )
             .filter(self.model.id == id)
