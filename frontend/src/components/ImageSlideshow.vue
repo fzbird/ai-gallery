@@ -246,6 +246,9 @@ onBeforeUnmount(() => {
   width: 100%;
   overflow: hidden;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .slideshow-track {
@@ -253,6 +256,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   transition: transform 0.5s ease-in-out;
+  align-items: center;
 }
 
 .slide {
@@ -265,6 +269,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .slide img {
@@ -275,6 +280,8 @@ onBeforeUnmount(() => {
   object-fit: contain;
   background: #000;
   border-radius: 8px;
+  display: block;
+  margin: 0 auto;
 }
 
 .slide-overlay {
