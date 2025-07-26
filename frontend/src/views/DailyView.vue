@@ -49,7 +49,7 @@ const todayGalleries = computed(() => {
 async function fetchDailyStats() {
   isLoadingStats.value = true;
   try {
-    const response = await apiClient.get('/api/v1/admin/daily-stats');
+    const response = await apiClient.get('/admin/daily-stats');
     dailyStats.value = response.data;
   } catch (error) {
     console.error('Error fetching daily stats:', error);
