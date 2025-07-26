@@ -11,6 +11,9 @@ import {
   ArrowDownOutline as ArrowDownIcon,
   PodiumOutline as PodiumIcon,
   TrendingUpOutline as TrendingUpIcon,
+  TrendingUpOutline as TrendingIcon,
+  HeartOutline as LikeIcon,
+  BookmarkOutline as BookmarkIcon,
   AlertCircleOutline as AlertIcon
 } from '@vicons/ionicons5';
 import GalleryGrid from '@/components/GalleryGrid.vue';
