@@ -2,7 +2,7 @@
   <n-modal
     v-model:show="showModal"
     preset="card"
-    style="width: 90vw; height: 90vh; max-width: none"
+    style="width: 95vw; height: 95vh; max-width: none"
     :mask-closable="true"
     :closable="false"
     @update:show="handleModalClose"
@@ -209,7 +209,7 @@ watch(() => props.show, (newVal) => {
           loading.value = false;
           fitToScreen();
         }
-      }, 100);
+      }, 200); // 增加延迟时间，确保图片完全加载
     });
   }
 });
@@ -295,7 +295,7 @@ const fitToScreen = () => {
   console.log('Container rect:', containerRect);
   
   // 计算可用空间，预留边距和工具栏空间
-  const padding = 40; // 边距
+  const padding = 60; // 增加边距，让图片显示更大
   const toolbarHeight = 80; // 工具栏高度
   
   const availableWidth = containerRect.width - (padding * 2);
@@ -314,6 +314,16 @@ const fitToScreen = () => {
   
   // 取较小的比例，确保图片完全显示
   let newScale = Math.min(scaleX, scaleY);
+  
+  // 如果图片比可用空间小，则放大到至少50%的可用空间
+  if (newScale > 1) {
+    // 图片较小，可以适当放大
+    const minScale = Math.min(scaleX, scaleY) * 0.8; // 放大到80%的可用空间
+    newScale = Math.max(minScale, 0.5); // 最小50%
+  } else {
+    // 图片较大，需要缩小以适应屏幕
+    newScale = Math.max(0.1, newScale); // 最小10%
+  }
   
   // 限制缩放范围：最小10%，最大300%
   newScale = Math.max(0.1, Math.min(newScale, 3));
@@ -513,7 +523,7 @@ const handleModalClose = (show) => {
 .image-viewer-container {
   position: relative;
   width: 100%;
-  height: calc(90vh - 140px);
+  height: calc(95vh - 140px);
   overflow: hidden;
   background: #f8fafc;
   border-radius: 8px;
