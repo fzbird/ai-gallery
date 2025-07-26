@@ -139,10 +139,10 @@
                 <template #icon>
                   <n-icon><CloudUploadOutline /></n-icon>
                 </template>
-                选择图片文件
+                添加图片文件
               </n-button>
               
-              <p class="upload-hint">支持多选，可同时选择多个图片文件</p>
+              <p class="upload-hint">支持多选，可多次添加图片文件到待上传列表</p>
               
               <!-- 隐藏的Naive UI上传组件，仅用于兼容性 -->
               <n-upload
@@ -164,7 +164,20 @@
             
             <!-- 新上传文件列表 -->
             <div v-if="newFileList.length > 0" class="new-files-section">
-              <h4>待上传图片</h4>
+              <div class="section-header-with-actions">
+                <h4>待上传图片</h4>
+                <n-button 
+                  size="small" 
+                  type="error" 
+                  quaternary 
+                  @click="clearAllNewFiles"
+                >
+                  <template #icon>
+                    <n-icon><TrashOutline /></n-icon>
+                  </template>
+                  清空所有
+                </n-button>
+              </div>
               <div class="new-files-list">
                 <div 
                   v-for="(file, index) in newFileList" 
@@ -552,6 +565,7 @@ async function handleNativeFileSelect(event) {
   console.log('=== handleNativeFileSelect START ===');
   console.log('Native file select triggered with:', event.target.files.length, 'files');
   console.log('Selected files:', Array.from(event.target.files).map(f => ({ name: f.name, size: f.size, type: f.type })));
+  console.log('Current newFileList length before adding:', newFileList.value.length);
   
   try {
     // 过滤出有效的图片文件
@@ -583,9 +597,22 @@ async function handleNativeFileSelect(event) {
       return;
     }
 
-    // 创建文件项并生成预览
+    // 检查重复文件
     const newFiles = [];
     for (const file of validFiles) {
+      // 检查是否已经存在相同的文件
+      const isDuplicate = newFileList.value.some(existingFile => 
+        existingFile.name === file.name && 
+        existingFile.file.size === file.size &&
+        existingFile.file.lastModified === file.lastModified
+      );
+      
+      if (isDuplicate) {
+        console.log('Duplicate file detected:', file.name);
+        message.warning(`文件 "${file.name}" 已经在上传列表中，已跳过`);
+        continue;
+      }
+      
       const preview = await createFilePreview(file);
       const uniqueId = `${file.name}_${file.size}_${file.lastModified}_${Date.now()}_${Math.random()}`;
       newFiles.push({
@@ -598,15 +625,18 @@ async function handleNativeFileSelect(event) {
       });
     }
 
-    // 更新文件列表
-    newFileList.value = newFiles;
-    console.log('Native file list processed, newFileList length:', newFileList.value.length);
-    
-    // 强制重新渲染上传组件
-    uploadKey.value++;
-    
-    if (validFiles.length > 0) {
-      message.success(`已选择 ${validFiles.length} 个新图片文件`);
+    // 追加新文件到现有列表（而不是替换）
+    if (newFiles.length > 0) {
+      newFileList.value.push(...newFiles);
+      console.log('Added', newFiles.length, 'new files to newFileList');
+      console.log('Total files in newFileList after adding:', newFileList.value.length);
+      
+      // 强制重新渲染上传组件
+      uploadKey.value++;
+      
+      message.success(`已添加 ${newFiles.length} 个新图片文件`);
+    } else {
+      console.log('No new files to add');
     }
     
     console.log('=== handleNativeFileSelect END ===');
@@ -764,6 +794,14 @@ function removeNewFile(index) {
   // 强制重新渲染上传组件，确保状态同步
   uploadKey.value++;
   console.log('GalleryEditModal: File removed, uploadKey incremented to:', uploadKey.value);
+}
+
+// 清空所有新文件
+function clearAllNewFiles() {
+  newFileList.value = [];
+  uploadFileList.value = []; // 清空n-upload组件的内部文件列表
+  uploadKey.value++; // 强制重新渲染上传组件
+  message.success('所有待上传图片已清空');
 }
 
 // 取消操作
@@ -1132,6 +1170,21 @@ onMounted(() => {
   color: #666;
   font-size: 14px;
   margin: 0;
+}
+
+/* 待上传图片区域样式 */
+.section-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-header-with-actions h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 /* 新文件列表 */
