@@ -34,6 +34,11 @@ import TopicsView from '../views/TopicsView.vue'
 import TopicView from '../views/TopicView.vue'
 import UsersView from '../views/UsersView.vue'
 
+// 法律页面导入
+import UserAgreement from '../views/UserAgreement.vue'
+import PrivacyPolicy from '../views/PrivacyPolicy.vue'
+import HelpCenter from '../views/HelpCenter.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -149,6 +154,22 @@ const router = createRouter({
       path: '/topics/:id',
       name: 'topic',
       component: TopicView
+    },
+    // 法律页面路由
+    {
+      path: '/user-agreement',
+      name: 'user-agreement',
+      component: UserAgreement
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: PrivacyPolicy
+    },
+    {
+      path: '/help',
+      name: 'help',
+      component: HelpCenter
     },
     {
       path: '/admin',

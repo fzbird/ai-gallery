@@ -136,10 +136,10 @@ const props = defineProps({
         <div class="footer-content">
           <p>&copy; 2024 {{ siteName }}. 保留所有权利.</p>
           <div class="footer-links">
-            <a href="#">联系我们</a>
-            <a href="#">用户协议</a>
-            <a href="#">隐私政策</a>
-            <a href="#">帮助中心</a>
+            <a href="http://wpa.qq.com/msgrd?v=3&uin=3617883300&site=qq&menu=yes">联系我们</a>
+            <router-link to="/user-agreement">用户协议</router-link>
+            <router-link to="/privacy-policy">隐私政策</router-link>
+            <router-link to="/help">帮助中心</router-link>
           </div>
         </div>
       </div>
