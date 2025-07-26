@@ -105,15 +105,144 @@
         <div class="container">
           <!-- Images grid section -->
           <div class="images-section">
-            <h2 class="section-title">图片列表</h2>
-            <div v-if="gallery.images && gallery.images.length > 0" class="images-grid">
-              <ImageCard 
-                v-for="image in gallery.images" 
-                :key="image.id" 
-                :image="image"
-                @click="viewImage(image.id)"
-              />
+            <div class="section-header">
+              <h2 class="section-title">图片列表</h2>
+              
+              <!-- 显示模式切换 -->
+              <div class="view-mode-controls">
+                <n-button-group>
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button 
+                        :type="viewMode === 'extra-large' ? 'primary' : 'default'"
+                        size="small"
+                        @click="setViewMode('extra-large')"
+                      >
+                        <template #icon>
+                          <n-icon><GridOutline /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    超大图标模式
+                  </n-tooltip>
+                  
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button 
+                        :type="viewMode === 'large' ? 'primary' : 'default'"
+                        size="small"
+                        @click="setViewMode('large')"
+                      >
+                        <template #icon>
+                          <n-icon><GridOutline /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    大图标模式
+                  </n-tooltip>
+                  
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button 
+                        :type="viewMode === 'small' ? 'primary' : 'default'"
+                        size="small"
+                        @click="setViewMode('small')"
+                      >
+                        <template #icon>
+                          <n-icon><GridOutline /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    小图标模式
+                  </n-tooltip>
+                  
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button 
+                        :type="viewMode === 'list' ? 'primary' : 'default'"
+                        size="small"
+                        @click="setViewMode('list')"
+                      >
+                        <template #icon>
+                          <n-icon><ListOutline /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    详细列表模式
+                  </n-tooltip>
+                  
+                  <n-tooltip trigger="hover">
+                    <template #trigger>
+                      <n-button 
+                        :type="viewMode === 'slideshow' ? 'primary' : 'default'"
+                        size="small"
+                        @click="setViewMode('slideshow')"
+                      >
+                        <template #icon>
+                          <n-icon><PlayOutline /></n-icon>
+                        </template>
+                      </n-button>
+                    </template>
+                    幻灯片模式
+                  </n-tooltip>
+                </n-button-group>
+              </div>
             </div>
+            
+            <!-- 图片显示区域 -->
+            <div v-if="gallery.images && gallery.images.length > 0" class="images-display">
+              <!-- 超大图标模式 -->
+              <div v-if="viewMode === 'extra-large'" class="images-grid extra-large-grid">
+                <ImageCard 
+                  v-for="image in gallery.images" 
+                  :key="image.id" 
+                  :image="image"
+                  :size="'extra-large'"
+                  @click="viewImage(image.id)"
+                />
+              </div>
+              
+              <!-- 大图标模式 -->
+              <div v-else-if="viewMode === 'large'" class="images-grid large-grid">
+                <ImageCard 
+                  v-for="image in gallery.images" 
+                  :key="image.id" 
+                  :image="image"
+                  :size="'large'"
+                  @click="viewImage(image.id)"
+                />
+              </div>
+              
+              <!-- 小图标模式 -->
+              <div v-else-if="viewMode === 'small'" class="images-grid small-grid">
+                <ImageCard 
+                  v-for="image in gallery.images" 
+                  :key="image.id" 
+                  :image="image"
+                  :size="'small'"
+                  @click="viewImage(image.id)"
+                />
+              </div>
+              
+              <!-- 详细列表模式 -->
+              <div v-else-if="viewMode === 'list'" class="images-list">
+                <ImageListItem 
+                  v-for="image in gallery.images" 
+                  :key="image.id" 
+                  :image="image"
+                  @click="viewImage(image.id)"
+                />
+              </div>
+              
+              <!-- 幻灯片模式 -->
+              <div v-else-if="viewMode === 'slideshow'" class="slideshow-container">
+                <ImageSlideshow 
+                  :images="gallery.images"
+                  @image-click="viewImage"
+                />
+              </div>
+            </div>
+            
             <div v-else class="no-images">
               <n-empty description="暂无图片" />
             </div>
@@ -161,11 +290,12 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { 
   NSpin, NIcon, NButton, NEmpty, NResult,
-  useMessage, useNotification
+  useMessage, useNotification, NButtonGroup, NTooltip
 } from 'naive-ui';
 import {
   PersonOutline, FolderOutline, TimeOutline, ImagesOutline,
-  EyeOutline, HeartOutline, BookmarkOutline, Heart, Bookmark, CreateOutline
+  EyeOutline, HeartOutline, BookmarkOutline, Heart, Bookmark, CreateOutline,
+  GridOutline, ListOutline, PlayOutline
 } from '@vicons/ionicons5';
 
 import ImageCard from '@/components/ImageCard.vue';
@@ -175,6 +305,8 @@ import GalleryEditModal from '@/components/GalleryEditModal.vue';
 import { useAuthStore } from '@/stores/auth';
 import { usePageTitle } from '@/utils/page-title';
 import api from '@/api/api.js';
+import ImageListItem from '@/components/ImageListItem.vue';
+import ImageSlideshow from '@/components/ImageSlideshow.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -188,6 +320,7 @@ const loading = ref(true);
 const liking = ref(false);
 const bookmarking = ref(false);
 const showEditModal = ref(false);
+const viewMode = ref('extra-large'); // 默认显示模式
 
 // 计算属性：判断是否可以编辑图集
 const canEditGallery = computed(() => {
@@ -302,6 +435,11 @@ function handleGalleryUpdated() {
   // 重新获取图集详情
   fetchGallery();
   message.success('图集修改成功！');
+}
+
+// 切换显示模式
+function setViewMode(mode) {
+  viewMode.value = mode;
 }
 
 // 监听图集数据变化，更新页面标题
@@ -487,18 +625,66 @@ onMounted(() => {
   margin-bottom: 40px;
 }
 
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
 .section-title {
   font-size: 24px;
   font-weight: 600;
   color: #1f2937;
-  margin: 0 0 24px 0;
-  text-align: center;
+  margin: 0;
+  text-align: left;
 }
 
-.images-grid {
+.view-mode-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.images-display {
+  /* Default styles for all display modes */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+/* Specific styles for each view mode */
+.images-grid.extra-large-grid {
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 32px;
+}
+
+.images-grid.large-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.images-grid.small-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.images-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.slideshow-container {
+  width: 100%;
+  height: 400px; /* Fixed height for slideshow */
+  background: #f0f0f0;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
 }
 
 .no-images {
@@ -604,6 +790,24 @@ onMounted(() => {
   .comments-card {
     padding: 16px;
   }
+
+  .view-mode-controls {
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .view-mode-controls .n-button {
+    padding: 0 12px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+    min-width: auto !important;
+  }
+
+  .slideshow-container {
+    height: 300px; /* Adjust for smaller screens */
+  }
 }
 
 /* 超小屏幕进一步优化 */
@@ -670,6 +874,20 @@ onMounted(() => {
   
   .comments-card {
     padding: 12px;
+  }
+
+  .view-mode-controls {
+    gap: 6px;
+  }
+
+  .view-mode-controls .n-button {
+    padding: 0 8px !important;
+    height: 32px !important;
+    font-size: 12px !important;
+  }
+
+  .slideshow-container {
+    height: 250px; /* Further adjustment for very small screens */
   }
 }
 </style> 

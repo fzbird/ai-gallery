@@ -18,6 +18,11 @@ const props = defineProps({
   isCoverImage: {
     type: Boolean,
     default: false
+  },
+  size: {
+    type: String,
+    default: 'large',
+    validator: (value) => ['extra-large', 'large', 'small'].includes(value)
   }
 });
 
@@ -44,7 +49,7 @@ async function handleDeleteImage() {
 </script>
 
 <template>
-  <div class="image-card-container" @click="navigateToDetail">
+  <div class="image-card-container" :class="`size-${size}`" @click="navigateToDetail">
     <n-card class="image-card" hoverable>
       <div v-if="showDeleteButton" class="delete-button-container" @click.stop>
         <n-tooltip trigger="hover" :disabled="!image.is_cover_image">
@@ -105,25 +110,52 @@ async function handleDeleteImage() {
 <style scoped>
 .image-card-container {
   cursor: pointer;
-  break-inside: avoid;
-  margin-bottom: 16px;
-  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.image-card-container:hover {
+  transform: translateY(-4px);
 }
 
 .image-card {
-  position: relative;
+  border-radius: 12px;
   overflow: hidden;
-  break-inside: avoid;
-  margin-bottom: 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
 .image-card:hover {
-  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.image-card:hover .image {
+  transform: scale(1.05);
+}
+
+.image-info {
+  padding: 12px;
+}
+
+.image-title {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats {
+  font-size: 12px;
+  color: #6b7280;
 }
 
 .delete-button-container {
@@ -135,61 +167,111 @@ async function handleDeleteImage() {
 
 .delete-button {
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  backdrop-filter: blur(4px);
 }
 
-.delete-button:hover {
-  background: rgba(239, 68, 68, 0.1);
+/* 不同尺寸的样式 */
+.size-extra-large .image-card {
+  min-height: 400px;
 }
 
-.image-display {
-  width: 100%;
-  height: auto;
-  display: block;
+.size-extra-large .image {
+  height: 300px;
 }
 
-.overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 16px;
-  color: white;
+.size-extra-large .image-title {
+  font-size: 16px;
+  margin-bottom: 12px;
 }
 
-.image-card:hover .overlay {
-  opacity: 1;
+.size-extra-large .stats {
+  font-size: 14px;
 }
 
-.image-info {
-  padding: 16px;
+.size-large .image-card {
+  min-height: 320px;
 }
 
-.image-title {
-  margin: 0;
-  font-weight: 500;
+.size-large .image {
+  height: 240px;
 }
 
-.stats {
-  font-size: 0.9em;
+.size-large .image-title {
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
-.image {
-  width: 100%;
-  height: auto;
-  display: block;
+.size-large .stats {
+  font-size: 12px;
 }
 
-/* This wrapper is needed for the tooltip to work on a disabled button */
-.popconfirm-trigger-wrapper {
-  display: inline-block;
+.size-small .image-card {
+  min-height: 200px;
+}
+
+.size-small .image {
+  height: 150px;
+}
+
+.size-small .image-title {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.size-small .stats {
+  font-size: 11px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .size-extra-large .image-card {
+    min-height: 300px;
+  }
+  
+  .size-extra-large .image {
+    height: 220px;
+  }
+  
+  .size-large .image-card {
+    min-height: 250px;
+  }
+  
+  .size-large .image {
+    height: 180px;
+  }
+  
+  .size-small .image-card {
+    min-height: 160px;
+  }
+  
+  .size-small .image {
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .size-extra-large .image-card {
+    min-height: 250px;
+  }
+  
+  .size-extra-large .image {
+    height: 180px;
+  }
+  
+  .size-large .image-card {
+    min-height: 200px;
+  }
+  
+  .size-large .image {
+    height: 150px;
+  }
+  
+  .size-small .image-card {
+    min-height: 140px;
+  }
+  
+  .size-small .image {
+    height: 100px;
+  }
 }
 </style> 
