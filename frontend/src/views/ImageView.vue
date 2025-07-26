@@ -78,25 +78,6 @@ const handleCommentDeleted = (commentId) => {
   }
 }
 
-const handleDownload = () => {
-  const imageUrl = `${API_BASE_URL()}${currentImage.value.image_url}`;
-  
-  // 下载图片
-  const a = document.createElement('a');
-  a.href = imageUrl;
-  a.download = currentImage.value.filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  
-  message.success('图片已开始下载');
-};
-
-// 打开图片查看器
-const openImageViewer = () => {
-  showImageViewer.value = true;
-};
-
 // 格式化文件大小
 const formatFileSize = (bytes) => {
   if (!bytes) return '';
@@ -117,6 +98,64 @@ function formatDate(dateString) {
     day: 'numeric'
   });
 }
+
+// 切换点赞状态
+const toggleLike = async () => {
+  if (!isAuthenticated.value) {
+    message.warning('请先登录');
+    return;
+  }
+  
+  try {
+    await imageStore.toggleLike(currentImage.value.id);
+    message.success(currentImage.value.liked_by_current_user ? '已取消点赞' : '点赞成功');
+  } catch (error) {
+    console.error('点赞失败:', error);
+    message.error('操作失败，请重试');
+  }
+};
+
+// 切换收藏状态
+const toggleBookmark = async () => {
+  if (!isAuthenticated.value) {
+    message.warning('请先登录');
+    return;
+  }
+  
+  try {
+    await imageStore.toggleBookmark(currentImage.value.id);
+    message.success(currentImage.value.bookmarked_by_current_user ? '已取消收藏' : '收藏成功');
+  } catch (error) {
+    console.error('收藏失败:', error);
+    message.error('操作失败，请重试');
+  }
+};
+
+// 下载图片
+const downloadImage = () => {
+  const imageUrl = `${API_BASE_URL()}${currentImage.value.image_url}`;
+  
+  // 下载图片
+  const a = document.createElement('a');
+  a.href = imageUrl;
+  a.download = currentImage.value.filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  
+  message.success('图片已开始下载');
+};
+
+// 处理图片加载错误
+const handleImageError = (event) => {
+  console.error('图片加载失败:', event.target.src);
+  message.error('图片加载失败');
+};
+
+// 打开图片查看器
+const openImageViewer = () => {
+  showImageViewer.value = true;
+};
 </script>
 
 <template>
@@ -135,8 +174,8 @@ function formatDate(dateString) {
         <div class="container">
           <!-- 面包屑导航 -->
           <n-breadcrumb class="breadcrumb">
-            <n-breadcrumb-item href="/">首页</n-breadcrumb-item>
-            <n-breadcrumb-item v-if="currentImage.gallery" :href="`/galleries/${currentImage.gallery.id}`">
+            <n-breadcrumb-item @click="$router.push('/')">首页</n-breadcrumb-item>
+            <n-breadcrumb-item v-if="currentImage.gallery" @click="$router.push(`/galleries/${currentImage.gallery.id}`)">
               {{ currentImage.gallery.title }}
             </n-breadcrumb-item>
             <n-breadcrumb-item>{{ currentImage.title }}</n-breadcrumb-item>
@@ -148,33 +187,9 @@ function formatDate(dateString) {
             <p v-if="currentImage.description" class="page-subtitle">{{ currentImage.description }}</p>
           </div>
 
-          <!-- 图片统计信息 -->
-          <div class="image-stats" v-if="currentImage">
-            <div class="stats-item">
-              <n-icon><EyeOutline /></n-icon>
-              <span>{{ currentImage.views_count || 0 }} 浏览</span>
-            </div>
-            <div class="stats-item">
-              <n-icon><HeartOutline /></n-icon>
-              <span>{{ currentImage.likes_count || 0 }} 点赞</span>
-            </div>
-            <div class="stats-item">
-              <n-icon><BookmarkOutline /></n-icon>
-              <span>{{ currentImage.bookmarks_count || 0 }} 收藏</span>
-            </div>
-            <div class="stats-item">
-              <span>上传于 {{ formatDate(currentImage.created_at) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 主要内容区域 -->
-      <div class="main-content">
-        <div class="container">
-          <!-- 图片信息卡片 -->
-          <div class="image-info-card">
-            <div class="image-meta-row">
+          <!-- 图片元信息 -->
+          <div class="image-meta-section">
+            <div class="meta-row">
               <span class="meta-item">
                 <n-icon><PersonOutline /></n-icon>
                 {{ currentImage.owner?.username || '未知用户' }}
@@ -187,84 +202,117 @@ function formatDate(dateString) {
                 <n-icon><ImagesOutline /></n-icon>
                 {{ currentImage.gallery.title }}
               </span>
+              <span class="meta-item">
+                <n-icon><TimeOutline /></n-icon>
+                {{ formatDate(currentImage.created_at) }}
+              </span>
             </div>
 
-            <!-- Tags -->
-            <div v-if="currentImage.tags && currentImage.tags.length > 0" class="tags-section">
-              <n-space>
-                <n-tag 
-                  v-for="tag in currentImage.tags" 
-                  :key="tag.id" 
-                  type="primary"
-                  round
-                  class="custom-tag"
-                >
-                  {{ tag.name }}
-                </n-tag>
-              </n-space>
+            <div class="stats-row">
+              <span class="stat-badge">
+                <n-icon><EyeOutline /></n-icon>
+                {{ currentImage.views_count }} 次浏览
+              </span>
+              <span class="stat-badge">
+                <n-icon><HeartOutline /></n-icon>
+                {{ currentImage.likes_count }} 次点赞
+              </span>
+              <span class="stat-badge">
+                <n-icon><BookmarkOutline /></n-icon>
+                {{ currentImage.bookmarks_count }} 次收藏
+              </span>
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="image-actions">
-              <n-button 
-                type="primary" 
-                @click="openImageViewer"
-                class="view-button"
+            <!-- 标签 -->
+            <div class="tags-section" v-if="currentImage.tags && currentImage.tags.length > 0">
+              <n-tag
+                v-for="tag in currentImage.tags"
+                :key="tag.id"
+                class="custom-tag"
+                size="medium"
               >
-                <template #icon>
-                  <n-icon><ExpandOutline /></n-icon>
-                </template>
-                查看大图
-              </n-button>
-              
-              <n-button 
-                @click="handleDownload"
-                class="download-button"
-              >
-                <template #icon>
-                  <n-icon><DownloadOutline /></n-icon>
-                </template>
-                下载图片
-              </n-button>
+                {{ tag.name }}
+              </n-tag>
             </div>
-          </div>
-
-          <!-- 图片展示区域 -->
-          <div class="image-container">
-            <n-card class="image-card">
-              <div class="image-wrapper" @click="openImageViewer">
-                <n-image
-                  :src="imageInfo.src"
-                  :alt="currentImage.title"
-                  class="main-image"
-                  object-fit="contain"
-                  preview-disabled
-                />
-              </div>
-            </n-card>
-          </div>
-
-          <!-- 评论区域 -->
-          <div class="comments-section">
-            <n-card class="comments-card">
-              <CommentsSection
-                :content-id="currentImage.id"
-                :content-type="'image'"
-                :comments="currentImage.comments"
-                @comment-posted="handleCommentPosted"
-                @comment-deleted="handleCommentDeleted"
-              />
-            </n-card>
           </div>
         </div>
       </div>
 
-      <!-- 图片查看器 -->
-      <ImageViewer
-        v-if="showImageViewer"
-        :image-info="imageInfo"
-        @close="showImageViewer = false"
-      />
+      <!-- 主要内容区域 -->
+      <div class="main-content">
+        <div class="container">
+          <!-- 图片展示区域 -->
+          <div class="image-display-section">
+            <div class="image-container" @click="showImageViewer = true">
+              <div class="image-wrapper">
+                <img
+                  :src="currentImage.image_url"
+                  :alt="currentImage.title"
+                  class="main-image"
+                  @error="handleImageError"
+                />
+                <div class="image-overlay">
+                  <div class="overlay-content">
+                    <n-icon class="expand-icon" size="48"><ExpandOutline /></n-icon>
+                    <p class="overlay-text">点击查看大图</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="image-actions">
+            <n-button
+              @click="toggleLike"
+              :type="currentImage.liked_by_current_user ? 'primary' : 'default'"
+              size="large"
+            >
+              <template #icon>
+                <n-icon>
+                  <Heart v-if="currentImage.liked_by_current_user" />
+                  <HeartOutline v-else />
+                </n-icon>
+              </template>
+              {{ currentImage.liked_by_current_user ? '已点赞' : '点赞' }}
+            </n-button>
+
+            <n-button
+              @click="toggleBookmark"
+              :type="currentImage.bookmarked_by_current_user ? 'primary' : 'default'"
+              size="large"
+            >
+              <template #icon>
+                <n-icon>
+                  <Bookmark v-if="currentImage.bookmarked_by_current_user" />
+                  <BookmarkOutline v-else />
+                </n-icon>
+              </template>
+              {{ currentImage.bookmarked_by_current_user ? '已收藏' : '收藏' }}
+            </n-button>
+
+            <n-button
+              @click="downloadImage"
+              type="default"
+              size="large"
+            >
+              <template #icon>
+                <n-icon><DownloadOutline /></n-icon>
+              </template>
+              下载
+            </n-button>
+          </div>
+
+          <!-- 评论区域 -->
+          <div class="comments-section">
+            <CommentsSection
+              :content-id="currentImage.id"
+              content-type="image"
+              :comments="currentImage.comments"
+            />
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Error state -->
@@ -272,18 +320,23 @@ function formatDate(dateString) {
       <n-result
         status="404"
         title="图片不存在"
-        description="您访问的图片可能已被删除或不存在"
+        description="该图片可能已被删除或移动"
       >
         <template #extra>
-          <n-button @click="$router.push('/')" type="primary">
-            返回首页
-          </n-button>
+          <n-button @click="$router.push('/')">返回首页</n-button>
         </template>
       </n-result>
     </div>
 
-    <!-- 统一底部组件 -->
-    <AppFooter theme-color="#3b82f6" />
+    <!-- Image Viewer -->
+    <ImageViewer
+      v-if="currentImage"
+      v-model:show="showImageViewer"
+      :image-src="imageInfo.src"
+      :image-title="imageInfo.title"
+      :image-size="imageInfo.size"
+      :download-name="imageInfo.downloadName"
+    />
   </div>
 </template>
 
@@ -294,9 +347,20 @@ function formatDate(dateString) {
   background: #f8fafc;
 }
 
+.loading-container, .error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.image-page {
+  min-height: calc(100vh - 64px);
+}
+
 /* 页面头部 */
 .page-header {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
   color: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 24px 0;
@@ -325,171 +389,175 @@ function formatDate(dateString) {
 }
 
 .page-title-section {
-  margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 24px;
 }
 
 .page-title {
   font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
+  font-weight: bold;
   color: white;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .page-subtitle {
   font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  line-height: 1.5;
 }
 
-.image-stats {
+/* 图片元信息区域 */
+.image-meta-section {
+  text-align: center;
+}
+
+.meta-row {
   display: flex;
-  gap: 24px;
   flex-wrap: wrap;
-}
-
-.stats-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.stats-item .n-icon {
-  font-size: 16px;
-}
-
-/* 主要内容区域 */
-.main-content {
-  padding: 32px 0;
-}
-
-/* 图片信息卡片 */
-.image-info-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.image-meta-row {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  color: #6b7280;
+  opacity: 0.9;
 }
 
-.meta-item .n-icon {
-  font-size: 16px;
-  color: #9ca3af;
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
 }
 
 .tags-section {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .custom-tag {
-  font-size: 12px;
-  padding: 4px 12px;
-}
-
-.image-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.view-button {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border: none;
-  color: white;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #3b82f6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px);
   font-weight: 500;
+  padding: 6px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 0 4px;
 }
 
-.view-button:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+.custom-tag:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.download-button {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #374151;
-  font-weight: 500;
+/* 主要内容区域 */
+.main-content {
+  padding: 40px 0;
 }
 
-.download-button:hover {
-  background: #e5e7eb;
-  border-color: #9ca3af;
+.image-display-section {
+  margin-bottom: 40px;
 }
 
-/* 图片展示区域 */
 .image-container {
-  margin-bottom: 32px;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.image-card {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+.image-container:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .image-wrapper {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  background: #f9fafb;
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-wrapper:hover {
-  transform: scale(1.02);
+  position: relative;
+  display: inline-block;
 }
 
 .main-image {
   max-width: 100%;
-  max-height: 600px;
-  object-fit: contain;
+  max-height: 70vh;
+  border-radius: 8px;
+  transition: filter 0.3s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-wrapper:hover .image-overlay {
+  opacity: 1;
+}
+
+.overlay-content {
+  text-align: center;
+  color: white;
+}
+
+.expand-icon {
+  margin-bottom: 8px;
+  color: white;
+}
+
+.overlay-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+/* 操作按钮 */
+.image-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.image-actions :deep(.n-button) {
+  min-width: 120px;
 }
 
 /* 评论区域 */
 .comments-section {
-  margin-bottom: 32px;
-}
-
-.comments-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* Loading state */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-  padding: 64px 24px 24px;
-}
-
-/* Error state */
-.error-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-  padding: 64px 24px 24px;
+  margin-bottom: 40px;
 }
 
 /* 响应式设计 */
@@ -500,48 +568,50 @@ function formatDate(dateString) {
   
   .page-title {
     font-size: 24px;
+    margin-bottom: 8px;
   }
   
   .page-subtitle {
     font-size: 14px;
   }
   
-  .image-stats {
-    gap: 16px;
-  }
-  
-  .stats-item {
-    font-size: 13px;
-  }
-  
-  .main-content {
-    padding: 24px 0;
-  }
-  
-  .image-info-card {
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .image-meta-row {
-    gap: 16px;
-    margin-bottom: 16px;
+  .meta-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 12px;
+    margin-bottom: 12px;
+    font-size: 12px;
   }
   
   .meta-item {
-    font-size: 13px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  
+  .stats-row {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .stat-badge {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  .image-container {
+    min-height: 300px;
+    padding: 16px;
   }
   
   .image-actions {
-    gap: 8px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
   }
   
-  .image-wrapper {
-    min-height: 300px;
-  }
-  
-  .main-image {
-    max-height: 400px;
+  .image-actions :deep(.n-button) {
+    width: 200px;
   }
 }
 
@@ -558,42 +628,28 @@ function formatDate(dateString) {
     font-size: 13px;
   }
   
-  .image-stats {
-    gap: 12px;
+  .meta-row {
+    gap: 12px 8px;
+    font-size: 11px;
   }
   
-  .stats-item {
-    font-size: 12px;
+  .stats-row {
+    gap: 8px;
   }
   
-  .main-content {
-    padding: 16px 0;
+  .stat-badge {
+    font-size: 11px;
+    padding: 4px 8px;
   }
   
-  .container {
-    padding: 0 16px;
-  }
-  
-  .image-info-card {
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  
-  .image-meta-row {
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  
-  .meta-item {
-    font-size: 12px;
-  }
-  
-  .image-wrapper {
+  .image-container {
     min-height: 250px;
+    padding: 12px;
   }
   
-  .main-image {
-    max-height: 300px;
+  .image-actions :deep(.n-button) {
+    width: 180px;
+    font-size: 14px;
   }
 }
 </style> 
