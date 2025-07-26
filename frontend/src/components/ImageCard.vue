@@ -172,11 +172,14 @@ async function handleDeleteImage() {
 
 /* 不同尺寸的样式 */
 .size-extra-large .image-card {
-  min-height: 400px;
+  min-height: 450px;
+  max-width: 100%;
 }
 
 .size-extra-large .image {
-  height: 300px;
+  height: 350px;
+  width: 100%;
+  object-fit: cover;
 }
 
 .size-extra-large .image-title {
@@ -189,11 +192,14 @@ async function handleDeleteImage() {
 }
 
 .size-large .image-card {
-  min-height: 320px;
+  min-height: 350px;
+  max-width: 100%;
 }
 
 .size-large .image {
-  height: 240px;
+  height: 260px;
+  width: 100%;
+  object-fit: cover;
 }
 
 .size-large .image-title {
@@ -206,11 +212,14 @@ async function handleDeleteImage() {
 }
 
 .size-small .image-card {
-  min-height: 200px;
+  min-height: 220px;
+  max-width: 100%;
 }
 
 .size-small .image {
-  height: 150px;
+  height: 160px;
+  width: 100%;
+  object-fit: cover;
 }
 
 .size-small .image-title {
@@ -223,25 +232,51 @@ async function handleDeleteImage() {
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .size-extra-large .image-card {
-    min-height: 300px;
+    min-height: 400px;
   }
   
   .size-extra-large .image {
-    height: 220px;
+    height: 300px;
   }
   
   .size-large .image-card {
-    min-height: 250px;
+    min-height: 320px;
   }
   
   .size-large .image {
-    height: 180px;
+    height: 240px;
   }
   
   .size-small .image-card {
-    min-height: 160px;
+    min-height: 200px;
+  }
+  
+  .size-small .image {
+    height: 140px;
+  }
+}
+
+@media (max-width: 768px) {
+  .size-extra-large .image-card {
+    min-height: 350px;
+  }
+  
+  .size-extra-large .image {
+    height: 250px;
+  }
+  
+  .size-large .image-card {
+    min-height: 280px;
+  }
+  
+  .size-large .image {
+    height: 200px;
+  }
+  
+  .size-small .image-card {
+    min-height: 180px;
   }
   
   .size-small .image {
@@ -251,23 +286,23 @@ async function handleDeleteImage() {
 
 @media (max-width: 480px) {
   .size-extra-large .image-card {
-    min-height: 250px;
+    min-height: 300px;
   }
   
   .size-extra-large .image {
-    height: 180px;
+    height: 200px;
   }
   
   .size-large .image-card {
-    min-height: 200px;
+    min-height: 240px;
   }
   
   .size-large .image {
-    height: 150px;
+    height: 160px;
   }
   
   .size-small .image-card {
-    min-height: 140px;
+    min-height: 160px;
   }
   
   .size-small .image {

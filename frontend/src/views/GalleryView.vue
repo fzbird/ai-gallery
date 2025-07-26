@@ -658,29 +658,29 @@ onMounted(() => {
 
 /* Specific styles for each view mode */
 .images-grid.extra-large-grid {
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 32px;
-}
-
-.images-grid.large-grid {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
 }
 
+.images-grid.large-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
 .images-grid.small-grid {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
 .images-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .slideshow-container {
   width: 100%;
-  height: 400px; /* Fixed height for slideshow */
+  height: 70vh; /* 使用视口高度的70% */
   background: #f0f0f0;
   border-radius: 12px;
   overflow: hidden;
@@ -707,187 +707,95 @@ onMounted(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
-  .gallery-banner {
-    min-height: 220px; /* 大幅减少banner高度 */
-    padding: 20px 0;
+@media (max-width: 1200px) {
+  .images-grid.extra-large-grid {
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
   }
   
-  .banner-content {
-    padding: 0 16px;
-  }
-  
-  .gallery-main-title {
-    font-size: 24px; /* 进一步减小标题 */
-    margin-bottom: 8px;
-  }
-  
-  .gallery-subtitle {
-    font-size: 14px;
-    margin-bottom: 16px;
-  }
-  
-  .gallery-meta-row {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 16px 12px; /* 垂直16px，水平12px */
-    margin-bottom: 16px;
-    font-size: 12px;
-  }
-  
-  .meta-item {
-    gap: 4px;
-    white-space: nowrap;
-  }
-  
-  .gallery-stats-row {
-    flex-direction: row;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  
-  .stat-badge {
-    padding: 6px 12px;
-    font-size: 12px;
-    border-radius: 16px;
-    gap: 4px;
-  }
-  
-  .gallery-actions {
-    flex-direction: row;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  
-  .gallery-actions .n-button {
-    padding: 0 12px !important;
-    height: 36px !important;
-    font-size: 13px !important;
-    min-width: auto !important;
-  }
-  
-  .section-title {
-    font-size: 20px;
-    margin-bottom: 16px;
-  }
-  
-  .main-content {
-    padding: 24px 0;
-  }
-  
-  .container {
-    padding: 0 16px;
-  }
-  
-  .images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  .images-grid.large-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
   }
   
-  .comments-card {
-    padding: 16px;
+  .images-grid.small-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
   }
-
-  .view-mode-controls {
-    flex-direction: row;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .view-mode-controls .n-button {
-    padding: 0 12px !important;
-    height: 36px !important;
-    font-size: 13px !important;
-    min-width: auto !important;
-  }
-
+  
   .slideshow-container {
-    height: 300px; /* Adjust for smaller screens */
+    height: 60vh;
   }
 }
 
-/* 超小屏幕进一步优化 */
+@media (max-width: 768px) {
+  .section-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .section-title {
+    text-align: center;
+  }
+  
+  .view-mode-controls {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .images-grid.extra-large-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  
+  .images-grid.large-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+  }
+  
+  .images-grid.small-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  
+  .slideshow-container {
+    height: 50vh;
+  }
+}
+
 @media (max-width: 480px) {
-  .gallery-banner {
-    min-height: 180px; /* 超小屏幕进一步减少高度 */
-    padding: 16px 0;
+  .section-header {
+    gap: 12px;
   }
   
-  .gallery-main-title {
-    font-size: 20px;
-    margin-bottom: 6px;
+  .view-mode-controls {
+    gap: 4px;
   }
   
-  .gallery-subtitle {
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-  
-  .gallery-meta-row {
-    gap: 12px 8px;
-    margin-bottom: 12px;
-    font-size: 11px;
-  }
-  
-  .gallery-stats-row {
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-  
-  .stat-badge {
-    padding: 4px 8px;
-    font-size: 11px;
-    border-radius: 12px;
-  }
-  
-  .gallery-actions {
-    gap: 6px;
-  }
-  
-  .gallery-actions .n-button {
+  .view-mode-controls .n-button {
     padding: 0 8px !important;
     height: 32px !important;
     font-size: 12px !important;
   }
   
-  .main-content {
-    padding: 16px 0;
-  }
-  
-  .container {
-    padding: 0 12px;
-  }
-  
-  .section-title {
-    font-size: 18px;
-    margin-bottom: 12px;
-  }
-  
-  .images-grid {
+  .images-grid.extra-large-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
   
-  .comments-card {
-    padding: 12px;
+  .images-grid.large-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
   }
-
-  .view-mode-controls {
+  
+  .images-grid.small-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 6px;
   }
-
-  .view-mode-controls .n-button {
-    padding: 0 8px !important;
-    height: 32px !important;
-    font-size: 12px !important;
-  }
-
+  
   .slideshow-container {
-    height: 250px; /* Further adjustment for very small screens */
+    height: 40vh;
   }
 }
 </style> 

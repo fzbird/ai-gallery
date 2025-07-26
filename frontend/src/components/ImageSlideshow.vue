@@ -237,11 +237,13 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   overflow: hidden;
   background: #000;
+  display: flex;
+  flex-direction: column;
 }
 
 .slideshow-viewport {
+  flex: 1;
   width: 100%;
-  height: 100%;
   overflow: hidden;
   position: relative;
 }
@@ -259,11 +261,16 @@ onBeforeUnmount(() => {
   height: 100%;
   position: relative;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .slide img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
   background: #000;
 }
@@ -396,20 +403,52 @@ onBeforeUnmount(() => {
 }
 
 /* 响应式设计 */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   .slideshow-controls {
-    padding: 0 10px;
+    padding: 0 16px;
   }
   
   .control-btn {
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
   }
   
   .slideshow-indicators {
-    bottom: 10px;
+    bottom: 16px;
     gap: 6px;
     padding: 6px;
+  }
+  
+  .indicator {
+    width: 35px;
+    height: 26px;
+  }
+  
+  .playback-controls {
+    top: 16px;
+    right: 16px;
+    padding: 6px 10px;
+  }
+  
+  .slide-counter {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .slideshow-controls {
+    padding: 0 12px;
+  }
+  
+  .control-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .slideshow-indicators {
+    bottom: 12px;
+    gap: 4px;
+    padding: 4px;
   }
   
   .indicator {
@@ -418,25 +457,46 @@ onBeforeUnmount(() => {
   }
   
   .playback-controls {
-    top: 10px;
-    right: 10px;
-    padding: 6px 10px;
+    top: 12px;
+    right: 12px;
+    padding: 4px 8px;
   }
   
   .slide-counter {
     font-size: 12px;
   }
+  
+  .slide-overlay {
+    padding: 16px;
+  }
+  
+  .slide-title {
+    font-size: 16px;
+  }
+  
+  .slide-stats {
+    gap: 12px;
+  }
+  
+  .stat {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 480px) {
+  .slideshow-controls {
+    padding: 0 8px;
+  }
+  
   .control-btn {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
   
   .slideshow-indicators {
-    gap: 4px;
-    padding: 4px;
+    bottom: 8px;
+    gap: 3px;
+    padding: 3px;
   }
   
   .indicator {
@@ -445,7 +505,29 @@ onBeforeUnmount(() => {
   }
   
   .playback-controls {
-    padding: 4px 8px;
+    top: 8px;
+    right: 8px;
+    padding: 3px 6px;
+  }
+  
+  .slide-counter {
+    font-size: 11px;
+  }
+  
+  .slide-overlay {
+    padding: 12px;
+  }
+  
+  .slide-title {
+    font-size: 14px;
+  }
+  
+  .slide-stats {
+    gap: 8px;
+  }
+  
+  .stat {
+    font-size: 12px;
   }
 }
 </style> 

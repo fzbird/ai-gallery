@@ -210,11 +210,36 @@ function formatDate(dateString) {
 }
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .image-list-item {
+    padding: 14px;
+    gap: 14px;
+  }
+  
+  .item-image {
+    width: 100px;
+    height: 70px;
+  }
+  
+  .item-title {
+    font-size: 15px;
+  }
+  
+  .item-description {
+    font-size: 13px;
+  }
+  
+  .item-stats {
+    gap: 14px;
+  }
+}
+
 @media (max-width: 768px) {
   .image-list-item {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    padding: 12px;
   }
   
   .item-image {
@@ -233,6 +258,7 @@ function formatDate(dateString) {
   
   .item-stats {
     justify-content: space-between;
+    gap: 12px;
   }
   
   .item-actions {
@@ -241,6 +267,43 @@ function formatDate(dateString) {
   
   .item-actions .n-button {
     width: 100%;
+  }
+  
+  .item-tags {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .image-list-item {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .item-image {
+    height: 100px;
+  }
+  
+  .item-title {
+    font-size: 14px;
+  }
+  
+  .item-description {
+    font-size: 12px;
+    -webkit-line-clamp: 1;
+  }
+  
+  .item-stats {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .stat-item {
+    font-size: 11px;
+  }
+  
+  .item-tags .n-tag {
+    font-size: 11px;
   }
 }
 </style> 
